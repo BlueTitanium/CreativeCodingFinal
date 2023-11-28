@@ -4,7 +4,7 @@ Creative Coding Final
 */
 /*
 Idea:
-- Fishing game (USES P5PLAY LIBRARY)
+- Fishing game 
     - Start Screen
     - Audio Slider (maybe)
     - Main area is aquarium
@@ -19,7 +19,7 @@ Idea:
     - Fishing mechanic 
         - sideview
         - You can see silhouettes of fishes as they swim around
-        - You can shoot your fishing hook to the mouse position at the top of the water
+        - You can shoot your fishing hook to the mouse position at the top of the water OR shoot the fishing hook based on how long the mouse is clicked, charge-based
         - the hook sinks down with gravity
         - hold left-click to reel in the hook
         - When a fish touches the hook, the minigame starts
@@ -54,16 +54,31 @@ Technical Goals
                 Incorporating an external library/technology (ex. RiTaJS, ml5.js, etc.)
 */
 
-class Fisher{
+class FishingRod{
+    constructor(){
 
+    }
+    display(){
+        
+    }
 }
 
 class Fish {
+    constructor(){
 
+    }
+    display(){
+        
+    }
 }
 
 class GameFish {
+    constructor(){
 
+    }
+    display(){
+
+    }
 }
 
 class Button {
@@ -85,14 +100,14 @@ class Button {
             rect(this.x,
                 this.y,
                 this.w,
-                this.h);
+                this.h, 20);
         } else {
             this.isHovering = false;
             fill("#759fff");
             rect(this.x,
                 this.y,
                 this.w,
-                this.h);
+                this.h, 20);
         }
 
         if(this.isHovering && mouseIsPressed){
@@ -104,7 +119,7 @@ class Button {
 }
 
 //scenes
-var current_scene = 1; //StartScene, Aquarium, Lake, Volcano, Sky
+var current_scene = 2; //StartScene, Aquarium, Lake, Volcano, Sky
 
 //minigame
 var current_game_state = 0; //no fishing game, fishing game start, fishing game, fishing game end
@@ -125,13 +140,24 @@ var AquariumButton, LakeButton, VolcanoButton, SkyButton;
 
 var col = "#030b1f";
 
+//hold all of the fishes in a list
+var aquariumFishies = [];
+var lakeFishies = [];
+var volcanoFishies = [];
+var skyFishies = [];
+
 function setup() {
     createCanvas(800, 600);
     noStroke();
+    sceneSwitchButton
+     = new Button(width-20-60,20,60,30,sceneSwitchFunction);
 }
   
 function draw() {
     background(col);
+
+    var hoveringButton = checkIfButtonIsHovered(); //so that an interaction doesn't happen by accident
+    
 
     switch (current_scene) {
         case 0: // START SCENE
@@ -145,15 +171,58 @@ function draw() {
 
             break;
         case 1: // AQUARIUM
-        
+            drawAquariumBG();
+            for(i = 0; i < lakeFishies.length; i++){
+                aquariumFishies.display();
+            }
+            drawAquariumFG();
+            //UI
+            sceneSwitchButton.display();
             break;
         case 2: // LAKE
             
+            
+            drawLakeBG();
+            drawFisher();
+            for(i = 0; i < lakeFishies.length; i++){
+                lakeFishies.display();
+            }
+
+            drawLakeFG();
+
+
+            //UI
+            sceneSwitchButton.display();
             break;
         case 3: // VOLCANO
+
+
+            //UI
+            sceneSwitchButton.display();
             
             break;
         case 4: // SKY
+
+
+            //UI
+            sceneSwitchButton.display();
+            
+            break;
+        default:
+            break;
+    }
+
+    switch (current_game_state) {
+        case 0: //no fishing game
+            
+            break;
+        case 1: //fishing game start
+            
+            break;
+        case 2: //fishing game
+            
+            break;
+        case 3: //fishing game end
             
             break;
         default:
@@ -162,7 +231,34 @@ function draw() {
 
 }
 
-function drawAquarium(){
+function checkIfButtonIsHovered(){ //checks if any button is hovered
+    return sceneSwitchButton.isHovering 
+        || AquariumButton.isHovering 
+        || LakeButton.isHovering 
+        || VolcanoButton.isHovering 
+        || SkyButton.isHovering;
+}
+
+function sceneSwitchFunction(){
+
+}
+
+function drawAquariumBG(){
+    //function to draw the aquarium background
+    background()
+}
+function drawAquariumFG(){
+    //function to draw the aquarium foreground
+}
+
+function drawFisher(){
+    //fisher + hook
+}
+
+function drawLakeBG(){
+
+}
+function drawLakeFG(){
 
 }
 
