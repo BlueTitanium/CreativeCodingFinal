@@ -26,7 +26,9 @@ Idea:
             - the minigame is like how stardew valley works
             - there is a bar and the fish moves up and down the bar and you need to make your bar keep the fish inside the bar within the time limit. Left click to make your bar go up and don't click to let it fall.
             - Once the fish is inside the bar during the time limit, you end the minigame and capture the fish successfully!
-*/
+
+https://howlerjs.com/ maybe use this as a sound library
+            */
 /*
 Technical Goals
     At least one class with a constructor and a method (25 points total)
@@ -54,12 +56,26 @@ Technical Goals
                 Incorporating an external library/technology (ex. RiTaJS, ml5.js, etc.)
 */
 
-class FishingRod{
+class Fisher{
+    fisherSprite;
+    fishingHookSprite;
+    hookStartPos;
     constructor(){
-
+        this.fisherSprite = new Sprite(width-50, 200, 50, 50, 'none');
+        this.fisherSprite.autoDraw = false;
+        this.fisherSprite.autoUpdate = false;
+        this.fishingHookSprite = new Sprite(width-75,175,20,20);
+        this.fishingHookSprite.overlaps(allSprites);
+        this.fishingHookSprite.autoDraw = false;
+        this.fishingHookSprite.autoUpdate = false;
     }
     display(){
-        
+        //show character in boat
+        //show fishing hook, should be a line from fishing pole to hook
+        this.fisherSprite.draw();
+        this.fisherSprite.update();      
+        this.fishingHookSprite.draw();
+        this.fishingHookSprite.update();
     }
 }
 
@@ -68,7 +84,9 @@ class Fish {
 
     }
     display(){
-        
+        //move left and right 
+        //if close to fishing hook position, move to that
+        //if touching a fishing hook, start minigame
     }
 }
 
@@ -178,6 +196,8 @@ var skyFishies = [];
 
 var fnt;//RALEWAY From google fonts
 
+var fisher;
+
 function preload(){
     fnt = loadFont("assets/Raleway-SemiBold.ttf");
 }
@@ -192,6 +212,8 @@ function setup() {
     SkyButton = new Button(startingX + buttonWidth*3 + buttonSpacing*3,startingY,buttonWidth,30,GoToSky, "clouds");
 
     AquariumButton.isActive = true;
+
+    fisher = new Fisher();
 }
   
 function draw() {
@@ -235,14 +257,15 @@ function draw() {
             }
 
             drawLakeFG();
-
-
             //UI
             
             drawUIButtons();
             break;
         case 3: // VOLCANO
             drawVolcanoBG();
+            drawFisher();
+
+
 
             //UI
             
@@ -250,6 +273,7 @@ function draw() {
             break;
         case 4: // SKY
             drawSkyBG();
+            drawFisher();
 
             //UI
             
@@ -367,6 +391,7 @@ function drawAquariumFG(){
 
 function drawFisher(){
     //fisher + hook
+    fisher.display();
 }
 
 function drawLakeBG(){
