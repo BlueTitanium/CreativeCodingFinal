@@ -56,37 +56,221 @@ Technical Goals
                 Incorporating an external library/technology (ex. RiTaJS, ml5.js, etc.)
 */
 
+
+
+
 class Fisher{
+    x = width-50;
+    y = 220;
+
     fisherSprite;
     fishingHookSprite;
-    hookStartPos;
+    hookStartPosX;
+    hookStartPosY;
+    fishingRodY;
+
+    fishingHookState = 0; //0 -> start pos, 1 -> charging, 2 -> launched, 3 -> in water (should be reeled in)
+
+    maxCharge = 10;
+    curCharge = 0;
+
+    nextRot = 0;
+    shakeAmt = 0;
+
     constructor(){
-        this.fisherSprite = new Sprite(width-50, 200, 50, 50, 'none');
+        this.fisherSprite = new Sprite(0, 0, 50, 50, 'none');
+        this.fisherSprite.image = 'assets/catfish2.png'; //drew this myself
+        this.fisherSprite.scale = .12;
         this.fisherSprite.autoDraw = false;
         this.fisherSprite.autoUpdate = false;
-        this.fishingHookSprite = new Sprite(width-75,175,20,20);
+
+        this.hookStartPosX= -135;
+        this.hookStartPosY= -60;
+        this.fishingRodX = -135;
+        this.fishingRodY = -70;
+        this.fishingHookSprite = new Sprite(this.hookStartPosX,this.hookStartPosY,20,20);
         this.fishingHookSprite.overlaps(allSprites);
+        this.fishingHookSprite.image = 'assets/fishinghook.png'; //drew this myself
         this.fishingHookSprite.autoDraw = false;
         this.fishingHookSprite.autoUpdate = false;
     }
+    reset(){
+        this.nextRot = 0;
+        this.shakeAmt = 0;
+        this.fishingHookSprite.x = this.hookStartPosX;
+        this.fishingHookSprite.y = this.hookStartPosY;
+        this.fishingHookSprite.vel.x = 0;
+        this.fishingHookSprite.vel.y = 0;
+        this.fishingHookState = 0;
+    }
     display(){
+        push();
+        translate(this.x,this.y);
+        switch (current_game_state) {//no fishing game, fishing game start, fishing game, fishing game end
+            case 0: //no fishing game
+                switch (fisher.fishingHookState) {//0 -> start pos, 1 -> charging, 2 -> launched, 3 -> in water (should be reeled in)
+                    case 0: // start pos
+                        this.fishingHookSprite.x = lerp(this.fishingHookSprite.x, this.hookStartPosX,.1);
+                        this.fishingHookSprite.y = lerp(this.fishingHookSprite.y, this.hookStartPosY,.1);
+                        this.nextRot = lerp(this.nextRot, 0, .1);
+                        this.shakeAmt = lerp(this.shakeAmt,0,.1);
+                        break;
+                    case 1: //charging 
+                        if(mouseIsPressed){
+                            if(this.curCharge < this.maxCharge){
+                                this.curCharge+=.1;
+                                console.log(this.curCharge);
+                            } else {
+                                this.curCharge = this.maxCharge;
+                            }
+                            this.nextRot = map(this.curCharge, 0, this.maxCharge, 0, 10);
+                            this.shakeAmt = map(this.curCharge, 0, this.maxCharge, 0, 2);
+                            translate(random(-1,1)*this.shakeAmt,random(-1,1)*this.shakeAmt);
+                        }
+                        break;
+                    case 2: //launched 
+                        this.nextRot = lerp(this.nextRot, 0, .1);
+                        this.fishingHookSprite.applyForce(0,4);
+                        if(this.fishingHookSprite.y > waterHeight-this.y){
+                            this.fishingHookSprite.vel.x = 0;
+                            this.fishingHookState=3;
+                        }
+                        break;
+                    case 3: //in the water 
+                        if(mouseIsPressed){
+                            this.fishingHookSprite.vel.y = 0;
+                            this.fishingHookSprite.moveTo(this.hookStartPosX,this.hookStartPosY,2);
+                            this.shakeAmt = lerp(this.shakeAmt,1,.01);
+                            translate(random(-1,1)*this.shakeAmt,random(-1,1)*this.shakeAmt);
+                            //this.fishingHookSprite.x = lerp(this.fishingHookSprite.x, this.hookStartPosX,.01);
+                            //this.fishingHookSprite.y = lerp(this.fishingHookSprite.y, this.hookStartPosY,.01);
+                        }else{
+                            this.nextRot = lerp(this.nextRot, 0, .1);
+                            this.shakeAmt = lerp(this.shakeAmt,0,.1);
+                            this.fishingHookSprite.vel.x = 0;
+                            if(this.fishingHookSprite.y > height - this.y){
+                                this.fishingHookSprite.vel.y = 0;
+                            } else {
+                                this.fishingHookSprite.vel.y = 1;
+                            }
+                            
+                        }
+                        if(this.fishingHookSprite.y < waterHeight-this.y){
+                            this.fishingHookSprite.vel.x = 0;
+                            this.fishingHookSprite.vel.y = 0;
+                            this.fishingHookState = 0;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case 1: //fishing game start
+                
+                break;
+            case 2: //fishing game
+                
+                break;
+            case 3: //fishing game end
+                
+                break;
+            default:
+                break;
+        }    
+        
+        rotate(this.nextRot);
         //show character in boat
         //show fishing hook, should be a line from fishing pole to hook
         this.fisherSprite.draw();
-        this.fisherSprite.update();      
+        this.fisherSprite.update();
+        
+        fill('#FFFFFF');
+        stroke('#FFFFFF');
+        line(this.fishingHookSprite.x, this.fishingHookSprite.y, this.hookStartPosX,this.fishingRodY);
+        
         this.fishingHookSprite.draw();
         this.fishingHookSprite.update();
+
+        pop();
+    }
+    launch(){
+        this.fishingHookSprite.vel.x = map(this.curCharge, 0, this.maxCharge, 0, -6);
+        this.fishingHookSprite.vel.y = map(this.curCharge, 0, this.maxCharge, 0, -5.5);
+        this.fishingHookState+=1;
+        this.curCharge = 0;
     }
 }
 
 class Fish {
-    constructor(){
-
+    fishSprite;
+    origY;
+    constructor(x, y, id, lBound, rBound, spd = 3){
+        this.fishSprite = new Sprite(x,y,90,40,'kinematic');
+        this.id = id;
+        this.origY = y;
+        if(fishiesCaptured[id]){
+            this.fishSprite.image = actualFishies[id];
+        } else {
+            this.fishSprite.image = silhouetteFishies[id];
+        }
+        this.lBound = lBound; //to have a left limit
+        this.rBound = rBound; //to have a right limit
+        this.fishSprite.autoDraw = false;
+        this.fishSprite.autoUpdate = false;
+        this.spd = spd;
+        var rand = random(0,1);
+        if(rand < .5){
+            this.fishSprite.vel.x = spd;
+            this.fishSprite.mirror.x=true;
+        } else {
+            this.fishSprite.vel.x = -spd;
+            this.fishSprite.mirror.x=false;
+        }
     }
     display(){
-        //move left and right 
+        this.fishSprite.draw();
+        this.fishSprite.update();
+
         //if close to fishing hook position, move to that
+        if(fisher.fishingHookState==3
+        && (abs(fisher.fishingHookSprite.x+fisher.x - this.fishSprite.x) < 80
+        && abs(fisher.fishingHookSprite.y+fisher.y - this.fishSprite.y) < 80)){
+            this.fishSprite.moveTo(fisher.fishingHookSprite.x+fisher.x,fisher.fishingHookSprite.y+fisher.y,this.spd);
+        } else {
+            if(abs(this.fishSprite.vel.x) <this.spd){
+                var rand = random(0,1);
+                if(rand < .5){
+                    this.fishSprite.vel.x = this.spd;
+                } else {
+                    this.fishSprite.vel.x = -this.spd;
+                }
+            }
+            //move left and right 
+            if(this.fishSprite.x < this.lBound){
+                this.fishSprite.vel.x = this.spd;
+            }
+            if(this.fishSprite.x > this.rBound){
+                this.fishSprite.vel.x = -this.spd;
+            }
+            this.fishSprite.vel.y = 0;
+            
+            //this.fishSprite.y = lerp(this.fishSprite.y,this.origY,.05);
+            this.fishSprite.moveTo(this.fishSprite.x,this.origY,this.spd)
+        }
+
         //if touching a fishing hook, start minigame
+        if(fisher.fishingHookState==3
+            && (abs(fisher.fishingHookSprite.x+fisher.x - this.fishSprite.x) < 10
+            && abs(fisher.fishingHookSprite.y+fisher.y - this.fishSprite.y) < 10)){
+            //START
+            
+        }
+        
+        if(this.fishSprite.vel.x < 0){
+            this.fishSprite.mirror.x=false;
+        } else {
+            this.fishSprite.mirror.x=true;
+        }
     }
 }
 
@@ -164,6 +348,43 @@ class Button {
 
 }
 
+//fish images
+var silhouetteFishies = [
+    "assets/FISH/S_Fish1.png",
+    "assets/FISH/S_Fish2.png",
+    "assets/FISH/S_Fish3.png",
+    "assets/FISH/S_Fish1Lava.png",
+    "assets/FISH/S_Fish2Lava.png",
+    "assets/FISH/S_Fish3Lava.png",
+    "assets/FISH/S_Fish1Sky.png",
+    "assets/FISH/S_Fish2Sky.png",
+    "assets/FISH/S_Fish3Sky.png"
+]
+var actualFishies = [
+    "assets/FISH/Fish1.png",
+    "assets/FISH/Fish2.png",
+    "assets/FISH/Fish3.png",
+    "assets/FISH/Fish1Lava.png",
+    "assets/FISH/Fish2Lava.png",
+    "assets/FISH/Fish3Lava.png",
+    "assets/FISH/Fish1Sky.png",
+    "assets/FISH/Fish2Sky.png",
+    "assets/FISH/Fish3Sky.png"
+]
+//id based
+var fishiesCaptured = [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+]
+
+
 //scenes
 var current_scene = 1; //StartScene, Aquarium, Lake, Volcano, Sky
 
@@ -187,6 +408,7 @@ var buttonSpacing = 20;
 var startingX = 20;
 var startingY = 20;
 var col = "#030b1f";
+var hoveringButton = false;
 
 //hold all of the fishes in a list
 var aquariumFishies = [];
@@ -196,7 +418,11 @@ var skyFishies = [];
 
 var fnt;//RALEWAY From google fonts
 
-var fisher;
+var fisher;//fisherman object
+
+
+
+var waterHeight= 230;
 
 function preload(){
     fnt = loadFont("assets/Raleway-SemiBold.ttf");
@@ -219,7 +445,7 @@ function setup() {
 function draw() {
     background(col);
 
-    var hoveringButton = checkIfButtonIsHovered(); //so that an interaction doesn't happen by accident
+    hoveringButton = checkIfButtonIsHovered();
     if(hoveringButton){
         cursor('pointer');
     } else {
@@ -239,8 +465,8 @@ function draw() {
             break;
         case 1: // AQUARIUM
             drawAquariumBG();
-            for(i = 0; i < lakeFishies.length; i++){
-                aquariumFishies.display();
+            for(i = 0; i < aquariumFishies.length; i++){
+                aquariumFishies[i].display();
             }
             drawAquariumFG();
             //UI
@@ -253,7 +479,7 @@ function draw() {
             drawLakeBG();
             drawFisher();
             for(i = 0; i < lakeFishies.length; i++){
-                lakeFishies.display();
+                lakeFishies[i].display();
             }
 
             drawLakeFG();
@@ -264,7 +490,9 @@ function draw() {
         case 3: // VOLCANO
             drawVolcanoBG();
             drawFisher();
-
+            for(i = 0; i < volcanoFishies.length; i++){
+                volcanoFishies[i].display();
+            }
 
 
             //UI
@@ -274,7 +502,9 @@ function draw() {
         case 4: // SKY
             drawSkyBG();
             drawFisher();
-
+            for(i = 0; i < skyFishies.length; i++){
+                skyFishies[i].display();
+            }
             //UI
             
             drawUIButtons();
@@ -359,23 +589,73 @@ function GoToAquarium(){
     disableAllButtonActive()
     AquariumButton.isActive = true;
     current_scene = 1;
+    fisher.reset();
 }
 function GoToLake(){
     disableAllButtonActive()
     LakeButton.isActive = true;
     current_scene = 2;
+    fisher.reset();
+    spawnLakeFishies();
 }
+function spawnLakeFishies(){//IDS 0-2
+    lakeFishies.forEach(element => {
+        element.fishSprite.remove();
+    });
+    lakeFishies = [];
+    var startIndex = 0;
+    for(i = startIndex; i < startIndex+3; i++){
+        var variation = random(240,600);
+        var randLBound = random(0,width-120-variation);
+        var randX = random(randLBound,randLBound+variation);
+        var randY = random(waterHeight+50,height);
+        lakeFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,random(.5,1)));
+    }
+}
+
 function GoToVolcano(){
     disableAllButtonActive()
     VolcanoButton.isActive = true;
     current_scene = 3;
+    fisher.reset();
+    spawnVolcanoFishies();
 }
+function spawnVolcanoFishies(){//IDS 3-5
+    volcanoFishies.forEach(element => {
+        element.fishSprite.remove();
+    });
+    volcanoFishies = [];
+    var startIndex = 3;
+    for(i = startIndex; i < startIndex+3; i++){
+        var variation = random(240,600);
+        var randLBound = random(0,width-120-variation);
+        var randX = random(randLBound,randLBound+variation);
+        var randY = random(waterHeight+50,height);
+        volcanoFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,random(1.5,2.5)));
+    }
+}
+
 function GoToSky(){
     disableAllButtonActive()
     SkyButton.isActive = true;
     current_scene = 4;
+    fisher.reset();
+    spawnSkyFishies();
 }
-
+function spawnSkyFishies(){//IDS 6-8
+    skyFishies.forEach(element => {
+        element.fishSprite.remove();
+    });
+    skyFishies = [];
+    var startIndex = 6;
+    for(i = startIndex; i < startIndex+3; i++){
+        var variation = random(240,600);
+        var randLBound = random(0,width-120-variation);
+        var randX = random(randLBound,randLBound+variation);
+        var randY = random(waterHeight+50,height);
+        skyFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,random(2.5,3.5)));
+    }
+}
 
 function drawAquariumBG(){
     //function to draw the aquarium background
@@ -396,27 +676,102 @@ function drawFisher(){
 
 function drawLakeBG(){
     background("#87CEEB");
+    fill("#175982");
+    rect(0,waterHeight,width,height-waterHeight);
 }
 function drawLakeFG(){
-
 }
 
 function drawVolcanoBG(){
-    background("#36130d");
+    background("#793d33");
+    fill("#ff441f");
+    rect(0,waterHeight,width,height-waterHeight);
 }
 function drawVolcanoFG(){
 
 }
 
 function drawSkyBG(){
-    background("#d5fdf4");
+    background("#c1ded0");
+    //TODO CHANGE 
+    fill("#9bb5c4");
+    rect(0,waterHeight,width,height-waterHeight);
 }
 function drawSkyFG(){
 
 }
 
-function keyPressed(){
-
+function mousePressed(){
+    if((current_scene!=0 && current_scene!=1) && !hoveringButton){
+        switch (current_game_state) {//no fishing game, fishing game start, fishing game, fishing game end
+            case 0: //no fishing game
+                switch (fisher.fishingHookState) {//0 -> start pos, 1 -> charging, 2 -> launched, 3 -> in water (should be reeled in)
+                    case 0: // start pos (ready to charge)
+                        fisher.fishingHookState+=1;
+                        break;
+                    case 1: //charging (the mouse should not be pressed while charging because it needs to be held)
+                        
+                        break;
+                    case 2: //launched (the mouse click shouldn't do anything while it is traveling in the air)
+                        
+                        break;
+                    case 3: //in the water (mouse click should bring the reel closer to the start position)
+                        fisher.isReeling = true;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case 1: //fishing game start
+                
+                break;
+            case 2: //fishing game
+                
+                break;
+            case 3: //fishing game end
+                
+                break;
+            default:
+                break;
+        }
+        
+    }
 }
 
+function mouseReleased(){
+    if(current_scene!=0 || current_scene!=1){
+        switch (current_game_state) {//no fishing game, fishing game start, fishing game, fishing game end
+            case 0: //no fishing game
+                switch (fisher.fishingHookState) {//0 -> start pos, 1 -> charging, 2 -> launched, 3 -> in water (should be reeled in)
+                    case 0: //start pos (wouldnt release at this point)
+
+                        break;
+                    case 1: //charging (when release, launch)
+                        fisher.launch();
+                        break;
+                    case 2: //launched (the mouse click shouldn't do anything while it is traveling in the air)
+                        
+                        break;
+                    case 3: //mouse release doesn't do anything while reeling in the hook
+                        
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case 1: //fishing game start
+                
+                break;
+            case 2: //fishing game
+                
+                break;
+            case 3: //fishing game end
+                
+                break;
+            default:
+                break;
+        }
+        
+    }
+}
 
