@@ -63,6 +63,7 @@ class Fisher{
     x = width-50;
     y = 220;
 
+    isReeling = false;
     fisherSprite;
     fishingHookSprite;
     hookStartPosX;
@@ -101,6 +102,7 @@ class Fisher{
         this.fishingHookSprite.y = this.hookStartPosY;
         this.fishingHookSprite.vel.x = 0;
         this.fishingHookSprite.vel.y = 0;
+        this.isReeling = false;
         this.fishingHookState = 0;
     }
     display(){
@@ -114,12 +116,15 @@ class Fisher{
                         this.fishingHookSprite.y = lerp(this.fishingHookSprite.y, this.hookStartPosY,.1);
                         this.nextRot = lerp(this.nextRot, 0, .1);
                         this.shakeAmt = lerp(this.shakeAmt,0,.1);
+                        this.fishingHookSprite.vel.x = 0;
+                        this.fishingHookSprite.vel.y = 0;
+                        this.isReeling = false;
                         break;
                     case 1: //charging 
                         if(mouseIsPressed){
                             if(this.curCharge < this.maxCharge){
                                 this.curCharge+=.1;
-                                console.log(this.curCharge);
+                                //console.log(this.curCharge);
                             } else {
                                 this.curCharge = this.maxCharge;
                             }
@@ -166,13 +171,16 @@ class Fisher{
                 }
                 break;
             case 1: //fishing game start
-                
+                this.fishingHookSprite.vel.x = 0;
+                this.fishingHookSprite.vel.y = 0;
                 break;
             case 2: //fishing game
-                
+                this.fishingHookSprite.vel.x = 0;
+                this.fishingHookSprite.vel.y = 0;
                 break;
             case 3: //fishing game end
-                
+                this.fishingHookSprite.vel.x = 0;
+                this.fishingHookSprite.vel.y = 0;
                 break;
             default:
                 break;
@@ -205,7 +213,8 @@ class Fish {
     fishSprite;
     origY;
     constructor(x, y, id, lBound, rBound, spd = 3){
-        this.fishSprite = new Sprite(x,y,90,40,'kinematic');
+        this.fishSprite = new Sprite(x,y,90,40);
+        this.fishSprite.overlaps(allSprites);
         this.id = id;
         this.origY = y;
         if(fishiesCaptured[id]){
@@ -237,13 +246,15 @@ class Fish {
         && abs(fisher.fishingHookSprite.y+fisher.y - this.fishSprite.y) < 80)){
             this.fishSprite.moveTo(fisher.fishingHookSprite.x+fisher.x,fisher.fishingHookSprite.y+fisher.y,this.spd);
         } else {
-            if(abs(this.fishSprite.vel.x) <this.spd){
+            if(abs(this.fishSprite.vel.x) < abs(this.spd-.5)){
                 var rand = random(0,1);
+                console.log("WHAT!: "+this.fishSprite.vel.x +" " +rand);
                 if(rand < .5){
                     this.fishSprite.vel.x = this.spd;
                 } else {
                     this.fishSprite.vel.x = -this.spd;
                 }
+                console.log("?: "+this.fishSprite.vel.x);
             }
             //move left and right 
             if(this.fishSprite.x < this.lBound){
@@ -252,10 +263,19 @@ class Fish {
             if(this.fishSprite.x > this.rBound){
                 this.fishSprite.vel.x = -this.spd;
             }
-            this.fishSprite.vel.y = 0;
+            fill("#FFFFFF");
+            //text(this.lBound, this.lBound,this.fishSprite.y);
+            //text(this.rBound, this.rBound,this.fishSprite.y);
+            
             
             //this.fishSprite.y = lerp(this.fishSprite.y,this.origY,.05);
-            this.fishSprite.moveTo(this.fishSprite.x,this.origY,this.spd)
+            if(this.fishSprite.y-this.origY>.2){
+                 this.fishSprite.vel.y = -1;
+            } else if (this.fishSprite.y-this.origY<.2){
+                this.fishSprite.vel.y = 1;
+            } else {
+                this.fishSprite.vel.y = 0;
+            }
         }
 
         //if touching a fishing hook, start minigame
@@ -263,7 +283,8 @@ class Fish {
             && (abs(fisher.fishingHookSprite.x+fisher.x - this.fishSprite.x) < 10
             && abs(fisher.fishingHookSprite.y+fisher.y - this.fishSprite.y) < 10)){
             //START
-            
+            current_game_state = 1;
+            fisher.isReeling = true;
         }
         
         if(this.fishSprite.vel.x < 0){
@@ -309,7 +330,8 @@ class Button {
                     this.w,
                     this.h, 20);
         } else if(mouseX > this.x && mouseX < this.x + this.w
-            && mouseY > this.y && mouseY < this.y + this.h){
+            && mouseY > this.y && mouseY < this.y + this.h
+            && current_game_state == 0){
             this.isHovering = true;
             fill("#FF2667");
             rect(this.x-this.borderSize,
@@ -340,7 +362,8 @@ class Button {
         textSize(15);
         textAlign(CENTER, CENTER);
         text(this.text, this.x+this.w/2, this.y+this.h/2-2);
-        if(this.isHovering && mouseIsPressed){
+        if(this.isHovering && mouseIsPressed 
+            && current_game_state == 0){
             this.func();
         }
         pop();
@@ -385,16 +408,18 @@ var fishiesCaptured = [
 ]
 
 
+
 //scenes
 var current_scene = 1; //StartScene, Aquarium, Lake, Volcano, Sky
 
 //minigame
-var current_game_state = 0; //no fishing game, fishing game start, fishing game, fishing game end
+var current_game_state = 1; //no fishing game, fishing game start, fishing game, fishing game end
 
-//SCREEN UI alpha values to smoothly fade between scenes
+//SCREEN UI alpha values to smoothly fade between game states
+var overallAlpha = 0;
 var startAlpha = 0;
-var sceneAlpha = 0;
 var gameAlpha = 0;
+var endAlpha = 0;
 
 //variables for the camera
 var nextX = 0;
@@ -440,6 +465,7 @@ function setup() {
     AquariumButton.isActive = true;
 
     fisher = new Fisher();
+    overallAlpha = 0;
 }
   
 function draw() {
@@ -515,16 +541,29 @@ function draw() {
 
     switch (current_game_state) {
         case 0: //no fishing game
-            
+            overallAlpha = lerp(overallAlpha, 0, .05);
+            startAlpha = lerp(startAlpha, 0, .05);
+            gameAlpha = lerp(gameAlpha, 0, .05);
+            endAlpha = lerp(endAlpha, 0, .05);
             break;
         case 1: //fishing game start
-            
+            DisplayFishingGameUIBox();
+            overallAlpha = lerp(overallAlpha, 255, .05);
+            startAlpha = lerp(startAlpha, 255, .05);
+            gameAlpha = lerp(gameAlpha, 0, .05);
+            endAlpha = lerp(endAlpha, 0, .05);
             break;
         case 2: //fishing game
-            
+            overallAlpha = lerp(overallAlpha, 255, .05);
+            startAlpha = lerp(startAlpha, 0, .05);
+            gameAlpha = lerp(gameAlpha, 255, .05);
+            endAlpha = lerp(endAlpha, 0, .05);
             break;
         case 3: //fishing game end
-            
+            overallAlpha = lerp(overallAlpha, 255, .05);
+            startAlpha = lerp(startAlpha, 0, .05);
+            gameAlpha = lerp(gameAlpha, 0, .05);
+            endAlpha = lerp(endAlpha, 255, .05);
             break;
         default:
             break;
@@ -581,9 +620,37 @@ function disableAllButtonActive(){
     SkyButton.isHovering=false;
     cursor(ARROW);
 }
-function sceneSwitchFunction(){
 
+function DisplayFishingGameUIBox(){
+    push();
+    var col = color('#000000');
+    col.setAlpha(overallAlpha*.4);
+    fill(col);
+    rect(-50,-50,width+200,height+200);
+    var col = color('#ffbe00');
+    col.setAlpha(overallAlpha);
+    fill(col);
+    var margin = 60;
+    var gap = 20;
+    var fishingBoxWidth = 180;
+    rect(margin, margin, fishingBoxWidth,height-margin*2,20);
+    var padding = 20;
+    var col = color('#fff9e6');
+    col.setAlpha(overallAlpha);
+    fill(col);
+    rect(margin+padding, margin+padding, fishingBoxWidth-padding*2,height-margin*2-padding*2,20);
+
+    var col = color('#977716');
+    col.setAlpha(overallAlpha);
+    fill(col);
+    rect(margin+fishingBoxWidth+gap, margin, width-fishingBoxWidth-gap-margin*2,height-margin*2,20);
+    pop();
 }
+
+function DisplayFishingGameInstructions(){
+    
+}
+
 
 function GoToAquarium(){
     disableAllButtonActive()
@@ -609,7 +676,7 @@ function spawnLakeFishies(){//IDS 0-2
         var randLBound = random(0,width-120-variation);
         var randX = random(randLBound,randLBound+variation);
         var randY = random(waterHeight+50,height);
-        lakeFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,random(.5,1)));
+        lakeFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,floor(random(1,2))/2));
     }
 }
 
@@ -631,7 +698,7 @@ function spawnVolcanoFishies(){//IDS 3-5
         var randLBound = random(0,width-120-variation);
         var randX = random(randLBound,randLBound+variation);
         var randY = random(waterHeight+50,height);
-        volcanoFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,random(1.5,2.5)));
+        volcanoFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,floor(random(3,5))/2));
     }
 }
 
@@ -653,7 +720,7 @@ function spawnSkyFishies(){//IDS 6-8
         var randLBound = random(0,width-120-variation);
         var randX = random(randLBound,randLBound+variation);
         var randY = random(waterHeight+50,height);
-        skyFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,random(2.5,3.5)));
+        skyFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,floor(random(5,7))/2));
     }
 }
 
@@ -716,7 +783,7 @@ function mousePressed(){
                         
                         break;
                     case 3: //in the water (mouse click should bring the reel closer to the start position)
-                        fisher.isReeling = true;
+                        
                         break;
                     default:
                         break;
