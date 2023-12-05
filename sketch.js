@@ -296,11 +296,50 @@ class Fish {
 }
 
 class GameFish {
-    constructor(){
+    gameFishSprite;
+    fishSprite;
+    id;
+    top;
+    bot;
+    constructor(id){
+        //margin+fishingBoxWidth+gap, margin, width-fishingBoxWidth-gap-margin*2,height-margin*2,
+        this.fishSprite = new Sprite((margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2,
+        (margin)+(height-margin*2)/2,
+        90,40);
+        this.fishSprite.overlaps(allSprites);
+        this.fishSprite.scale = 3;
+        this.fishSprite.autoDraw = false;
+        this.fishSprite.autoUpdate = false;
+        
+        this.gameFishSprite = new Sprite(margin+padding+(fishingBoxWidth-padding*2)/2,
+        margin+padding+(height-margin*2-padding*2)/2,
+        90,40);
+        this.gameFishSprite.overlaps(allSprites);
+        this.gameFishSprite.autoDraw = false;
+        this.gameFishSprite.autoUpdate = false;
 
+        this.setID(id);
+        this.top = margin+padding;
+        this.bot = margin+padding+height-margin*2-padding*2;
     }
-    display(){
+    setID(id){
+        this.id = id;
+        if(fishiesCaptured[id]){
+            this.fishSprite.image = actualFishies[id];
+            this.gameFishSprite.image = actualFishies[id];
+        } else {
+            this.fishSprite.image = silhouetteFishies[id];
+            this.gameFishSprite.image = silhouetteFishies[id];
+        }
+    }
 
+    display(){
+        tint(255,overallAlpha);
+        this.fishSprite.draw();
+        this.fishSprite.update();
+        this.gameFishSprite.draw();
+        this.gameFishSprite.update();
+        tint(255,255);
     }
 }
 
@@ -435,6 +474,13 @@ var startingY = 20;
 var col = "#030b1f";
 var hoveringButton = false;
 
+//game ui variables
+var margin = 60;
+var gap = 20;
+var fishingBoxWidth = 180;
+var padding = 20;
+var gameFish;
+
 //hold all of the fishes in a list
 var aquariumFishies = [];
 var lakeFishies = [];
@@ -466,6 +512,8 @@ function setup() {
 
     fisher = new Fisher();
     overallAlpha = 0;
+
+    gameFish = new GameFish(0);
 }
   
 function draw() {
@@ -539,6 +587,12 @@ function draw() {
             break;
     }
 
+    DisplayFishingGameUIBox();
+    DisplayFishingGameStart();
+    DisplayFishingGameGame();
+    DisplayFishingGameEnd();
+    gameFish.display();
+
     switch (current_game_state) {
         case 0: //no fishing game
             overallAlpha = lerp(overallAlpha, 0, .05);
@@ -547,7 +601,8 @@ function draw() {
             endAlpha = lerp(endAlpha, 0, .05);
             break;
         case 1: //fishing game start
-            DisplayFishingGameUIBox();
+            
+            
             overallAlpha = lerp(overallAlpha, 255, .05);
             startAlpha = lerp(startAlpha, 255, .05);
             gameAlpha = lerp(gameAlpha, 0, .05);
@@ -623,32 +678,68 @@ function disableAllButtonActive(){
 
 function DisplayFishingGameUIBox(){
     push();
+    //background tint
     var col = color('#000000');
     col.setAlpha(overallAlpha*.4);
     fill(col);
     rect(-50,-50,width+200,height+200);
+    //border
     var col = color('#ffbe00');
     col.setAlpha(overallAlpha);
     fill(col);
-    var margin = 60;
-    var gap = 20;
-    var fishingBoxWidth = 180;
     rect(margin, margin, fishingBoxWidth,height-margin*2,20);
-    var padding = 20;
+    
+    //inner
     var col = color('#fff9e6');
     col.setAlpha(overallAlpha);
     fill(col);
     rect(margin+padding, margin+padding, fishingBoxWidth-padding*2,height-margin*2-padding*2,20);
 
+    //box 2
     var col = color('#977716');
     col.setAlpha(overallAlpha);
     fill(col);
     rect(margin+fishingBoxWidth+gap, margin, width-fishingBoxWidth-gap-margin*2,height-margin*2,20);
+
+
+    //text
+    var top = margin + padding;
+    var col = color('#FFFFFF');
+    col.setAlpha(overallAlpha);
+    fill(col);
+    textAlign(CENTER, TOP);
+    textSize(50);
+    text("fishing minigame", (margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2, top);
+    var col = color('#FFFFFF');
+    col.setAlpha(overallAlpha*.7);
+    fill(col);
+    textSize(20);
+    text("left click makes the red square jump up\nmake the fish stay in the red square\nby the end of the time limit", (margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2, top+60);
+
     pop();
 }
 
-function DisplayFishingGameInstructions(){
-    
+function DisplayFishingGameStart(){
+    push();
+    var bot = margin+padding+height-margin*2-padding*2;
+    //text
+    var col = color('#FFFFFF');
+    col.setAlpha(startAlpha);
+    fill(col);
+    textAlign(CENTER, BOTTOM);
+    textSize(50);
+    text("CLICK TO START", (margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2, bot);
+    pop();
+}
+function DisplayFishingGameGame(){
+    push();
+
+    pop();
+}
+function DisplayFishingGameEnd(){
+    push();
+
+    pop();
 }
 
 
