@@ -119,6 +119,12 @@ class Fisher{
                         this.fishingHookSprite.vel.x = 0;
                         this.fishingHookSprite.vel.y = 0;
                         this.isReeling = false;
+
+                        var col = color('#0000006c');
+                        fill(col);
+                        textAlign(CENTER, TOP);
+                        textSize(30);
+                        text("hold left-click to charge", width/2-this.x, 100-this.y);
                         break;
                     case 1: //charging 
                         if(mouseIsPressed){
@@ -131,6 +137,12 @@ class Fisher{
                             this.nextRot = map(this.curCharge, 0, this.maxCharge, 0, 10);
                             this.shakeAmt = map(this.curCharge, 0, this.maxCharge, 0, 2);
                             translate(random(-1,1)*this.shakeAmt,random(-1,1)*this.shakeAmt);
+
+                            var col = color('#0000006c');
+                            fill(col);
+                            textAlign(CENTER, TOP);
+                            textSize(30);
+                            text("let go of left-click to launch hook when ready", width/2-this.x, 100-this.y);
                         }
                         break;
                     case 2: //launched 
@@ -140,6 +152,11 @@ class Fisher{
                             this.fishingHookSprite.vel.x = 0;
                             this.fishingHookState=3;
                         }
+                        var col = color('#0000006c');
+                        fill(col);
+                        textAlign(CENTER, TOP);
+                        textSize(30);
+                        text("wheeeeeeeeeeeeeeeeeeeeeeeeeee", width/2-this.x, 100-this.y);
                         break;
                     case 3: //in the water 
                         if(mouseIsPressed){
@@ -149,6 +166,11 @@ class Fisher{
                             translate(random(-1,1)*this.shakeAmt,random(-1,1)*this.shakeAmt);
                             //this.fishingHookSprite.x = lerp(this.fishingHookSprite.x, this.hookStartPosX,.01);
                             //this.fishingHookSprite.y = lerp(this.fishingHookSprite.y, this.hookStartPosY,.01);
+                            var col = color('#0000006c');
+                            fill(col);
+                            textAlign(CENTER, TOP);
+                            textSize(30);
+                            text("try to make the fish touch your hook", width/2-this.x, 100-this.y);
                         }else{
                             this.nextRot = lerp(this.nextRot, 0, .1);
                             this.shakeAmt = lerp(this.shakeAmt,0,.1);
@@ -158,7 +180,11 @@ class Fisher{
                             } else {
                                 this.fishingHookSprite.vel.y = 1;
                             }
-                            
+                            var col = color('#0000006c');
+                            fill(col);
+                            textAlign(CENTER, TOP);
+                            textSize(30);
+                            text("hold left click to reel the hook in", width/2-this.x, 100-this.y);
                         }
                         if(this.fishingHookSprite.y < waterHeight-this.y){
                             this.fishingHookSprite.vel.x = 0;
@@ -248,13 +274,11 @@ class Fish {
         } else {
             if(abs(this.fishSprite.vel.x) < abs(this.spd-.5)){
                 var rand = random(0,1);
-                console.log("WHAT!: "+this.fishSprite.vel.x +" " +rand);
                 if(rand < .5){
                     this.fishSprite.vel.x = this.spd;
                 } else {
                     this.fishSprite.vel.x = -this.spd;
                 }
-                console.log("?: "+this.fishSprite.vel.x);
             }
             //move left and right 
             if(this.fishSprite.x < this.lBound){
@@ -269,9 +293,9 @@ class Fish {
             
             
             //this.fishSprite.y = lerp(this.fishSprite.y,this.origY,.05);
-            if(this.fishSprite.y-this.origY>.2){
+            if(this.fishSprite.y-this.origY>3){
                  this.fishSprite.vel.y = -1;
-            } else if (this.fishSprite.y-this.origY<.2){
+            } else if (this.fishSprite.y-this.origY<3){
                 this.fishSprite.vel.y = 1;
             } else {
                 this.fishSprite.vel.y = 0;
@@ -279,12 +303,15 @@ class Fish {
         }
 
         //if touching a fishing hook, start minigame
-        if(fisher.fishingHookState==3
+        if(!fisher.isReeling && fisher.fishingHookState==3
             && (abs(fisher.fishingHookSprite.x+fisher.x - this.fishSprite.x) < 10
             && abs(fisher.fishingHookSprite.y+fisher.y - this.fishSprite.y) < 10)){
             //START
+            gameFish.setID(this.id,this);
             current_game_state = 1;
             fisher.isReeling = true;
+            allowGameClick = false;
+            setTimeout(function() { allowClick(); },500);
         }
         
         if(this.fishSprite.vel.x < 0){
@@ -298,9 +325,15 @@ class Fish {
 class GameFish {
     gameFishSprite;
     fishSprite;
+    squareSprite;
     id;
+    obj;
     top;
     bot;
+    accel = .2;
+    jumpForce = -4;
+    randomTimeLeft = 0;
+    spd = 1;
     constructor(id){
         //margin+fishingBoxWidth+gap, margin, width-fishingBoxWidth-gap-margin*2,height-margin*2,
         this.fishSprite = new Sprite((margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2,
@@ -311,6 +344,15 @@ class GameFish {
         this.fishSprite.autoDraw = false;
         this.fishSprite.autoUpdate = false;
         
+
+        this.squareSprite = new Sprite(margin+padding+(fishingBoxWidth-padding*2)/2,
+        margin+padding+(height-margin*2-padding*2)/2,
+        120,120);
+        this.squareSprite.color = '#eb4034';
+        this.squareSprite.overlaps(allSprites);
+        this.squareSprite.autoDraw = false;
+        this.squareSprite.autoUpdate = false;
+
         this.gameFishSprite = new Sprite(margin+padding+(fishingBoxWidth-padding*2)/2,
         margin+padding+(height-margin*2-padding*2)/2,
         90,40);
@@ -322,7 +364,13 @@ class GameFish {
         this.top = margin+padding;
         this.bot = margin+padding+height-margin*2-padding*2;
     }
-    setID(id){
+    setID(id,obj){
+        this.obj = obj;
+        this.squareSprite.x = margin+padding+(fishingBoxWidth-padding*2)/2;
+        this.squareSprite.y = margin+padding+(height-margin*2-padding*2)/2;
+        this.gameFishSprite.x = margin+padding+(fishingBoxWidth-padding*2)/2;
+        this.gameFishSprite.y = margin+padding+(height-margin*2-padding*2)/2;
+        this.randomTimeLeft=0;
         this.id = id;
         if(fishiesCaptured[id]){
             this.fishSprite.image = actualFishies[id];
@@ -332,13 +380,104 @@ class GameFish {
             this.gameFishSprite.image = silhouetteFishies[id];
         }
     }
+    setIDImage(id){
+        this.id = id;
+        if(fishiesCaptured[id]){
+            this.fishSprite.image = actualFishies[id];
+            this.gameFishSprite.image = actualFishies[id];
+        } else {
+            this.fishSprite.image = silhouetteFishies[id];
+            this.gameFishSprite.image = silhouetteFishies[id];
+        }
+    }
+    jump(){
+        this.squareSprite.vel.y = this.jumpForce;
+    }
+    checkCapture(){
+        if(this.gameFishSprite.y < this.squareSprite.y + 60 &&
+            this.gameFishSprite.y > this.squareSprite.y - 60){
+                if(fishiesCaptured[this.id]){
+                    game_results = 1;
+                } else {
+                    game_results = 0;
+                    fishiesCaptured[this.id] = true;
+                    this.setIDImage(this.id);
+                }
+                if(this.obj != null){
+                    switch (current_scene) {
+                        case 2://lake
+                            var i = lakeFishies.indexOf(this.obj);
+                            lakeFishies.splice(i,1);
+                            
+                            
+                            break;
+                        case 3://volcano
+                            var i = volcanoFishies.indexOf(this.obj);
+                            volcanoFishies.splice(i,1);
+                            
+                            
+                            break;
+                        case 4://sky
+                            var i = skyFishies.indexOf(this.obj);
+                            skyFishies.splice(i,1);
 
+                            
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            } else {
+                game_results = 2;
+            }
+    }
     display(){
         tint(255,overallAlpha);
+        var col = color('#eb4034');
+        col.setAlpha(overallAlpha);
+        this.squareSprite.color = col;
+        this.squareSprite.draw();
+        this.squareSprite.update();
         this.fishSprite.draw();
         this.fishSprite.update();
         this.gameFishSprite.draw();
         this.gameFishSprite.update();
+
+        if(current_game_state == 2){ //in game
+            if(this.randomTimeLeft > 0){
+                this.randomTimeLeft--;
+            } else {
+                this.randomTimeLeft = random(1,5)*60;
+                var rand = random(0,1);
+                if(rand < .5){
+                    this.gameFishSprite.vel.y = this.spd;
+                } else {
+                    this.gameFishSprite.vel.y = -this.spd;
+                }
+            }
+
+
+            this.squareSprite.vel.y += this.accel;
+            if(this.squareSprite.y > this.bot-60){
+                this.squareSprite.y = this.bot-61;
+                this.squareSprite.vel.y = 0;
+            }
+            if(this.squareSprite.y < this.top+60){
+                this.squareSprite.y = this.top+61;
+            }
+
+            if(this.gameFishSprite.y > this.bot-20){
+                this.gameFishSprite.y = this.bot-20;
+                this.gameFishSprite.vel.y = 0;
+            }
+            if(this.gameFishSprite.y < this.top+20){
+                this.gameFishSprite.y = this.top+20;
+                this.gameFishSprite.vel.y = 0;
+            }
+        } else {
+            this.squareSprite.vel.y = 0;
+            this.gameFishSprite.vel.y = 0;
+        }
         tint(255,255);
     }
 }
@@ -452,7 +591,12 @@ var fishiesCaptured = [
 var current_scene = 1; //StartScene, Aquarium, Lake, Volcano, Sky
 
 //minigame
-var current_game_state = 1; //no fishing game, fishing game start, fishing game, fishing game end
+var current_game_state = 0; //no fishing game, fishing game start, fishing game, fishing game end
+var game_results = 2; //new fish, old fish, loss
+var game_time = 10;
+var game_time_left = 0;
+var timerID;
+var allowGameClick = true;
 
 //SCREEN UI alpha values to smoothly fade between game states
 var overallAlpha = 0;
@@ -544,7 +688,21 @@ function draw() {
             }
             drawAquariumFG();
             //UI
-            
+            fill('#ffffff6c')
+            textAlign(CENTER, TOP);
+            textSize(30);
+            var s = " fishies in the aquarium";
+            if(aquariumFishies.length==1){
+                s = " fish in the aquarium";
+            }
+            text(aquariumFishies.length + s, width/2, 100);
+
+            textAlign(RIGHT,BOTTOM);
+            textSize(15);
+            fill("#043161");
+            text("a game by taneim miah",width-19,height-14);
+            fill("#348ceb");
+            text("a game by taneim miah",width-20,height-15);
             drawUIButtons();
             break;
         case 2: // LAKE
@@ -604,21 +762,34 @@ function draw() {
             
             
             overallAlpha = lerp(overallAlpha, 255, .05);
-            startAlpha = lerp(startAlpha, 255, .05);
+            if(allowGameClick){
+                startAlpha = lerp(startAlpha, 255, .05);
+            }
             gameAlpha = lerp(gameAlpha, 0, .05);
             endAlpha = lerp(endAlpha, 0, .05);
             break;
         case 2: //fishing game
+            if(game_time_left <= 0){
+                current_game_state = 3;
+                
+                gameFish.checkCapture();
+                allowGameClick = false;
+                setTimeout(allowClick,500);
+            }
             overallAlpha = lerp(overallAlpha, 255, .05);
             startAlpha = lerp(startAlpha, 0, .05);
             gameAlpha = lerp(gameAlpha, 255, .05);
             endAlpha = lerp(endAlpha, 0, .05);
             break;
         case 3: //fishing game end
-            overallAlpha = lerp(overallAlpha, 255, .05);
-            startAlpha = lerp(startAlpha, 0, .05);
-            gameAlpha = lerp(gameAlpha, 0, .05);
-            endAlpha = lerp(endAlpha, 255, .05);
+            
+                overallAlpha = lerp(overallAlpha, 255, .05);
+
+                startAlpha = lerp(startAlpha, 0, .05);
+                gameAlpha = lerp(gameAlpha, 0, .05);
+            if(allowGameClick){
+                endAlpha = lerp(endAlpha, 255, .05);
+            }
             break;
         default:
             break;
@@ -649,6 +820,9 @@ function drawUIButtons(){
     fill("#ffffffa1");
     text("click a button on the left to travel",startingX+20+buttonWidth*4+buttonSpacing*4,70/2+14);
 
+    
+    
+
     if(AquariumButton.isActive){
         fill("#ffffff41");
         textAlign(RIGHT,TOP);
@@ -657,6 +831,7 @@ function drawUIButtons(){
     }
     pop();
 }
+
 
 function checkIfButtonIsHovered(){ //checks if any button is hovered
     return AquariumButton.isHovering 
@@ -733,12 +908,42 @@ function DisplayFishingGameStart(){
 }
 function DisplayFishingGameGame(){
     push();
-
+    var bot = margin+padding+height-margin*2-padding*2;
+    //text
+    var col = color('#FFFFFF');
+    col.setAlpha(gameAlpha);
+    fill(col);
+    textAlign(CENTER, BOTTOM);
+    textSize(50);
+    text("TIME LEFT: "+game_time_left, (margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2, bot-50);
     pop();
 }
 function DisplayFishingGameEnd(){
     push();
-
+    var bot = margin+padding+height-margin*2-padding*2;
+    //text
+    var col = color('#FFFFFF');
+    col.setAlpha(endAlpha);
+    fill(col);
+    textAlign(CENTER, BOTTOM);
+    textSize(20);
+    var s = "";
+    switch (game_results) {
+        case 0: //new
+            s = "CONGRATS! YOU CAUGHT A NEW FISH\n FOR YOUR AQUARIUM";
+            break;
+        case 1: //old
+            s = "CONGRATS! THIS IS AN OLD FISH,\n SO YOU RELEASE IT"
+            break;
+        case 2: //loss
+            s = "NICE TRY! YOU'll CATCH IT NEXT\n TIME FOR SURE!"
+            break;
+        default:
+            break;
+    }
+    text(s, (margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2, bot-70);
+    textSize(50);
+    text("CLICK TO END", (margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2, bot);
     pop();
 }
 
@@ -748,7 +953,45 @@ function GoToAquarium(){
     AquariumButton.isActive = true;
     current_scene = 1;
     fisher.reset();
+    spawnAquariumFishies();
 }
+function spawnAquariumFishies(){
+    aquariumFishies.forEach(element => {
+        element.fishSprite.remove();
+    });
+    aquariumFishies = [];
+    var startIndex = 0;
+    for(i = startIndex; i < startIndex+3; i++){
+        if(fishiesCaptured[i]){
+            var variation = random(240,600);
+            var randLBound = random(0,width-120-variation);
+            var randX = random(randLBound,randLBound+variation);
+            var randY = random(waterHeight+50,height);
+            aquariumFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,floor(random(1,2))/2));
+        }
+    }
+    var startIndex = 3;
+    for(i = startIndex; i < startIndex+3; i++){
+        if(fishiesCaptured[i]){
+            var variation = random(240,600);
+            var randLBound = random(0,width-120-variation);
+            var randX = random(randLBound,randLBound+variation);
+            var randY = random(waterHeight+50,height);
+            aquariumFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,floor(random(3,5))/2));
+        }
+    }
+    var startIndex = 6;
+    for(i = startIndex; i < startIndex+3; i++){
+        if(fishiesCaptured[i]){
+            var variation = random(240,600);
+            var randLBound = random(0,width-120-variation);
+            var randX = random(randLBound,randLBound+variation);
+            var randY = random(waterHeight+50,height);
+            aquariumFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,floor(random(5,7))/2));
+        }
+    }
+}
+
 function GoToLake(){
     disableAllButtonActive()
     LakeButton.isActive = true;
@@ -859,6 +1102,18 @@ function drawSkyFG(){
 
 }
 
+//idea from this https://editor.p5js.org/denaplesk2/sketches/ryIBFP_lG
+function timer(){
+    if(game_time_left > 0){
+        game_time_left--;
+    } else {
+        clearInterval(timerID);
+    }
+}
+function allowClick(){
+    allowGameClick = true;
+}
+
 function mousePressed(){
     if((current_scene!=0 && current_scene!=1) && !hoveringButton){
         switch (current_game_state) {//no fishing game, fishing game start, fishing game, fishing game end
@@ -881,13 +1136,21 @@ function mousePressed(){
                 }
                 break;
             case 1: //fishing game start
-                
+                if(allowGameClick){
+                    current_game_state=2;
+                    game_time_left = game_time;
+                    timerID = setInterval(timer,1000);
+                    
+                }
                 break;
             case 2: //fishing game
-                
+                gameFish.jump();
                 break;
             case 3: //fishing game end
-                
+                if(allowGameClick){
+                    fisher.reset();
+                    current_game_state=0;
+                }
                 break;
             default:
                 break;
@@ -932,4 +1195,3 @@ function mouseReleased(){
         
     }
 }
-
