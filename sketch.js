@@ -104,6 +104,7 @@ class Fisher{
         this.fishingHookSprite.vel.y = 0;
         this.isReeling = false;
         this.fishingHookState = 0;
+        chargeSFX.stop();
     }
     display(){
         push();
@@ -138,6 +139,9 @@ class Fisher{
                             this.shakeAmt = map(this.curCharge, 0, this.maxCharge, 0, 2);
                             translate(random(-1,1)*this.shakeAmt,random(-1,1)*this.shakeAmt);
 
+                            var chargeVol = map(this.curCharge, 0, this.maxCharge, 0.1, 0.3);
+                            chargeSFX.volume(chargeVol);
+
                             var col = color('#0000006c');
                             fill(col);
                             textAlign(CENTER, TOP);
@@ -151,6 +155,7 @@ class Fisher{
                         if(this.fishingHookSprite.y > waterHeight-this.y){
                             this.fishingHookSprite.vel.x = 0;
                             this.fishingHookState=3;
+                            waterSFX.play();
                         }
                         var col = color('#0000006c');
                         fill(col);
@@ -190,6 +195,7 @@ class Fisher{
                             this.fishingHookSprite.vel.x = 0;
                             this.fishingHookSprite.vel.y = 0;
                             this.fishingHookState = 0;
+                            chargeSFX.stop();
                         }
                         break;
                     default:
@@ -232,6 +238,7 @@ class Fisher{
         this.fishingHookSprite.vel.y = map(this.curCharge, 0, this.maxCharge, 0, -5.5);
         this.fishingHookState+=1;
         this.curCharge = 0;
+        launchSFX.play();
     }
 }
 
@@ -312,6 +319,7 @@ class Fish {
             fisher.isReeling = true;
             allowGameClick = false;
             setTimeout(function() { allowClick(); },500);
+            catchSFX.play();
         }
         
         if(this.fishSprite.vel.x < 0){
@@ -427,8 +435,10 @@ class GameFish {
                             break;
                     }
                 }
+                victorySFX.play();
             } else {
                 game_results = 2;
+                lossSFX.play();
             }
     }
     display(){
@@ -542,6 +552,7 @@ class Button {
         text(this.text, this.x+this.w/2, this.y+this.h/2-2);
         if(this.isHovering && mouseIsPressed 
             && current_game_state == 0){
+                uiClickSFX.play();
             this.func();
         }
         pop();
@@ -549,7 +560,7 @@ class Button {
 
 }
 
-//fish images
+//fish images all drawn by me
 var silhouetteFishies = [
     "assets/FISH/S_Fish1.png",
     "assets/FISH/S_Fish2.png",
@@ -635,12 +646,71 @@ var fnt;//RALEWAY From google fonts
 
 var fisher;//fisherman object
 
+//backgrounds and foregrounds all drawn by me
+var aquariumBG, aquariumFG, lakeBG, volcanoBG, skyBG;
 
 
+//SOUND AND SFX FILES
+//song by peritune https://peritune.com/blog/2023/07/31/cafe_seaside/
+var song = new Howl({ 
+    src: ['assets/PerituneMaterial_Cafe_Seaside_loop.mp3'],
+    loop: true,
+    volume: 0.15
+  });
+
+//all sfx from Kenney https://www.kenney.nl/assets 
+  //charge and reel are the same
+var chargeSFX = new Howl({ 
+    src: ['assets/sfx/charge.ogg'],
+    loop: true,
+    volume: 0.1
+  });
+var launchSFX = new Howl({ 
+    src: ['assets/sfx/launch.ogg'],
+    loop: false,
+    volume: 0.3
+  });
+var waterSFX = new Howl({ 
+    src: ['assets/sfx/water.ogg'],
+    loop: false,
+    volume: 0.5
+  });
+var uiClickSFX = new Howl({ 
+    src: ['assets/sfx/uiclick.ogg'],
+    loop: false,
+    volume: 0.2
+  });
+var catchSFX = new Howl({ 
+    src: ['assets/sfx/catch.ogg'],
+    loop: false,
+    volume: 0.3
+  });
+var clickSFX = new Howl({ 
+    src: ['assets/sfx/click.ogg'],
+    loop: false,
+    volume: 0.3
+  });
+var victorySFX = new Howl({ 
+    src: ['assets/sfx/win.ogg'],
+    loop: false,
+    volume: 0.3
+  });
+var lossSFX = new Howl({ 
+    src: ['assets/sfx/lose.ogg'],
+    loop: false,
+    volume: 0.3
+  });
+
+//water height
 var waterHeight= 230;
 
 function preload(){
     fnt = loadFont("assets/Raleway-SemiBold.ttf");
+    aquariumBG = loadImage("assets/aquariumbg.png");
+    aquariumFG = loadImage("assets/aquariumfg.png");
+    lakeBG = loadImage("assets/lakebg.png");
+    volcanoBG = loadImage("assets/volcanobg.png");
+    skyBG = loadImage("assets/skybg.png");
 }
 
 function setup() {
@@ -658,6 +728,8 @@ function setup() {
     overallAlpha = 0;
 
     gameFish = new GameFish(0);
+
+    song.play();
 }
   
 function draw() {
@@ -714,7 +786,6 @@ function draw() {
                 lakeFishies[i].display();
             }
 
-            drawLakeFG();
             //UI
             
             drawUIButtons();
@@ -859,19 +930,19 @@ function DisplayFishingGameUIBox(){
     fill(col);
     rect(-50,-50,width+200,height+200);
     //border
-    var col = color('#ffbe00');
+    var col = color('#ff9100');
     col.setAlpha(overallAlpha);
     fill(col);
     rect(margin, margin, fishingBoxWidth,height-margin*2,20);
     
     //inner
-    var col = color('#fff9e6');
+    var col = color('#175982');
     col.setAlpha(overallAlpha);
     fill(col);
     rect(margin+padding, margin+padding, fishingBoxWidth-padding*2,height-margin*2-padding*2,20);
 
     //box 2
-    var col = color('#977716');
+    var col = color('#ff9100');
     col.setAlpha(overallAlpha);
     fill(col);
     rect(margin+fishingBoxWidth+gap, margin, width-fishingBoxWidth-gap-margin*2,height-margin*2,20);
@@ -1061,47 +1132,40 @@ function spawnSkyFishies(){//IDS 6-8
 function drawAquariumBG(){
     //function to draw the aquarium background
     background("#001339");
-    fill("#020b11");
-    rect(0,220,width,height);
     fill("#175982");
-    rect(10,230,width-20,height-230-10,20);
+    rect(0,230,width,370);
+    image(aquariumBG, 0,230);
 }
 function drawAquariumFG(){
     //function to draw the aquarium foreground
+    image(aquariumFG, 0,230);
 }
 
 function drawFisher(){
     //fisher + hook
     fisher.display();
+    
 }
 
 function drawLakeBG(){
     background("#87CEEB");
     fill("#175982");
     rect(0,waterHeight,width,height-waterHeight);
-}
-function drawLakeFG(){
+    image(lakeBG, 0,230);
 }
 
 function drawVolcanoBG(){
     background("#793d33");
     fill("#ff441f");
     rect(0,waterHeight,width,height-waterHeight);
+    image(volcanoBG, 0,230);
 }
-function drawVolcanoFG(){
-
-}
-
 function drawSkyBG(){
-    background("#c1ded0");
-    //TODO CHANGE 
-    fill("#9bb5c4");
-    rect(0,waterHeight,width,height-waterHeight);
+    background("#9bb5c4");
+    //fill("#9bb5c4");
+    //rect(0,waterHeight,width,height-waterHeight);
+    image(skyBG, 0,230);
 }
-function drawSkyFG(){
-
-}
-
 //idea from this https://editor.p5js.org/denaplesk2/sketches/ryIBFP_lG
 function timer(){
     if(game_time_left > 0){
@@ -1121,6 +1185,9 @@ function mousePressed(){
                 switch (fisher.fishingHookState) {//0 -> start pos, 1 -> charging, 2 -> launched, 3 -> in water (should be reeled in)
                     case 0: // start pos (ready to charge)
                         fisher.fishingHookState+=1;
+                        chargeSFX.play();
+                        chargeSFX.rate(.8);
+                        chargeSFX.volume(0.1);
                         break;
                     case 1: //charging (the mouse should not be pressed while charging because it needs to be held)
                         
@@ -1129,7 +1196,9 @@ function mousePressed(){
                         
                         break;
                     case 3: //in the water (mouse click should bring the reel closer to the start position)
-                        
+                        chargeSFX.play();
+                        chargeSFX.volume(0.06);
+                        chargeSFX.rate(1.5);
                         break;
                     default:
                         break;
@@ -1140,16 +1209,21 @@ function mousePressed(){
                     current_game_state=2;
                     game_time_left = game_time;
                     timerID = setInterval(timer,1000);
-                    
+                    clickSFX.play();
+                    clickSFX.rate(random(0.8,1.2));
                 }
                 break;
             case 2: //fishing game
                 gameFish.jump();
+                clickSFX.play();
+                clickSFX.rate(random(0.8,1.2));
                 break;
             case 3: //fishing game end
                 if(allowGameClick){
                     fisher.reset();
                     current_game_state=0;
+                    clickSFX.play();
+                    clickSFX.rate(random(0.8,1.2));
                 }
                 break;
             default:
@@ -1168,13 +1242,14 @@ function mouseReleased(){
 
                         break;
                     case 1: //charging (when release, launch)
+                        chargeSFX.stop();
                         fisher.launch();
                         break;
                     case 2: //launched (the mouse click shouldn't do anything while it is traveling in the air)
                         
                         break;
-                    case 3: //mouse release doesn't do anything while reeling in the hook
-                        
+                    case 3: //mouse release while reeling in the hook
+                        chargeSFX.stop();
                         break;
                     default:
                         break;
