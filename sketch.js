@@ -58,43 +58,51 @@ Technical Goals
 
 
 
-
+//fisher class that handles the game code for the fishercat and the fishing hook
 class Fisher{
-    x = width-50;
-    y = 220;
+    x = width-50; //translate x
+    y = 220;    //translate y
 
-    isReeling = false;
-    fisherSprite;
-    fishingHookSprite;
-    hookStartPosX;
-    hookStartPosY;
-    fishingRodY;
+    isReeling = false; //reeling state to check if fish allowed to collide with hook
+    fisherSprite; //fishercat sprite object
+    fishingHookSprite; //fishing hook sprite object
+    hookStartPosX; //original hook pos x
+    hookStartPosY; //original hook pos y
+    fishingRodY; //the fishing rod line height
 
     fishingHookState = 0; //0 -> start pos, 1 -> charging, 2 -> launched, 3 -> in water (should be reeled in)
 
-    maxCharge = 10;
-    curCharge = 0;
+    maxCharge = 10; //the max charge time allowed
+    curCharge = 0; //the current charge time
 
-    nextRot = 0;
-    shakeAmt = 0;
+    nextRot = 0; //the next rotation value
+    shakeAmt = 0; //the shake amount for the fisher cat
 
     constructor(){
+        //initialize the sprite
         this.fisherSprite = new Sprite(0, 0, 50, 50, 'none');
         this.fisherSprite.image = 'assets/catfish2.png'; //drew this myself
         this.fisherSprite.scale = .12;
+        //we want to manually draw and update so the order is correct
         this.fisherSprite.autoDraw = false;
         this.fisherSprite.autoUpdate = false;
 
+        //hook and fishing rod starting positions
         this.hookStartPosX= -135;
         this.hookStartPosY= -60;
         this.fishingRodX = -135;
         this.fishingRodY = -70;
+        //initializing the sprite
         this.fishingHookSprite = new Sprite(this.hookStartPosX,this.hookStartPosY,20,20);
+        //don't want to collide
         this.fishingHookSprite.overlaps(allSprites);
         this.fishingHookSprite.image = 'assets/fishinghook.png'; //drew this myself
+        //we want to manually draw and update so the order is correct
         this.fishingHookSprite.autoDraw = false;
         this.fishingHookSprite.autoUpdate = false;
     }
+
+    //reset function to bring all variables to the correct initial values
     reset(){
         this.nextRot = 0;
         this.shakeAmt = 0;
@@ -106,13 +114,16 @@ class Fisher{
         this.fishingHookState = 0;
         chargeSFX.stop();
     }
+    //display function
     display(){
         push();
+        //translate to the correct spot
         translate(this.x,this.y);
         switch (current_game_state) {//no fishing game, fishing game start, fishing game, fishing game end
             case 0: //no fishing game
                 switch (fisher.fishingHookState) {//0 -> start pos, 1 -> charging, 2 -> launched, 3 -> in water (should be reeled in)
                     case 0: // start pos
+                        //set all the values to the original positions smoothly
                         this.fishingHookSprite.x = lerp(this.fishingHookSprite.x, this.hookStartPosX,.1);
                         this.fishingHookSprite.y = lerp(this.fishingHookSprite.y, this.hookStartPosY,.1);
                         this.nextRot = lerp(this.nextRot, 0, .1);
@@ -120,7 +131,7 @@ class Fisher{
                         this.fishingHookSprite.vel.x = 0;
                         this.fishingHookSprite.vel.y = 0;
                         this.isReeling = false;
-
+                        //add text to the background showing how to play
                         var col = color('#0000006c');
                         fill(col);
                         textAlign(CENTER, TOP);
@@ -129,19 +140,21 @@ class Fisher{
                         break;
                     case 1: //charging 
                         if(mouseIsPressed){
+                            //charge the fishing rod till max charge
                             if(this.curCharge < this.maxCharge){
                                 this.curCharge+=.1;
                                 //console.log(this.curCharge);
                             } else {
                                 this.curCharge = this.maxCharge;
                             }
+                            //aesthetic changes to rotate and shake the cat
                             this.nextRot = map(this.curCharge, 0, this.maxCharge, 0, 10);
                             this.shakeAmt = map(this.curCharge, 0, this.maxCharge, 0, 2);
                             translate(random(-1,1)*this.shakeAmt,random(-1,1)*this.shakeAmt);
-
+                            //have charging sfx get stronger the more you hold it
                             var chargeVol = map(this.curCharge, 0, this.maxCharge, 0.1, 0.3);
                             chargeSFX.volume(chargeVol);
-
+                            //add text to the background showing how to play
                             var col = color('#0000006c');
                             fill(col);
                             textAlign(CENTER, TOP);
@@ -149,14 +162,19 @@ class Fisher{
                             text("let go of left-click to launch hook when ready", width/2-this.x, 100-this.y);
                         }
                         break;
-                    case 2: //launched 
+                    case 2: //launched
+                        //return the rotation back to normal
                         this.nextRot = lerp(this.nextRot, 0, .1);
+                        //add a vertical force down to simulate gravity
                         this.fishingHookSprite.applyForce(0,4);
+                        //once the fishing hook touches water, go to the next state
                         if(this.fishingHookSprite.y > waterHeight-this.y){
                             this.fishingHookSprite.vel.x = 0;
                             this.fishingHookState=3;
+                            //play a sound effect
                             waterSFX.play();
                         }
+                        //fun text
                         var col = color('#0000006c');
                         fill(col);
                         textAlign(CENTER, TOP);
@@ -165,18 +183,22 @@ class Fisher{
                         break;
                     case 3: //in the water 
                         if(mouseIsPressed){
+                            //try to reel the hook back to the original position
                             this.fishingHookSprite.vel.y = 0;
                             this.fishingHookSprite.moveTo(this.hookStartPosX,this.hookStartPosY,2);
+                            //shake the player when reeling back
                             this.shakeAmt = lerp(this.shakeAmt,1,.01);
                             translate(random(-1,1)*this.shakeAmt,random(-1,1)*this.shakeAmt);
                             //this.fishingHookSprite.x = lerp(this.fishingHookSprite.x, this.hookStartPosX,.01);
                             //this.fishingHookSprite.y = lerp(this.fishingHookSprite.y, this.hookStartPosY,.01);
+                            //instructional text
                             var col = color('#0000006c');
                             fill(col);
                             textAlign(CENTER, TOP);
                             textSize(30);
                             text("try to make the fish touch your hook", width/2-this.x, 100-this.y);
                         }else{
+                            //make the reel drop to the floor while not reeling
                             this.nextRot = lerp(this.nextRot, 0, .1);
                             this.shakeAmt = lerp(this.shakeAmt,0,.1);
                             this.fishingHookSprite.vel.x = 0;
@@ -185,16 +207,19 @@ class Fisher{
                             } else {
                                 this.fishingHookSprite.vel.y = 1;
                             }
+                            //instructional text
                             var col = color('#0000006c');
                             fill(col);
                             textAlign(CENTER, TOP);
                             textSize(30);
                             text("hold left click to reel the hook in", width/2-this.x, 100-this.y);
                         }
+                        //if the fishing hook is out of the water, go back to the original fishing hook state
                         if(this.fishingHookSprite.y < waterHeight-this.y){
                             this.fishingHookSprite.vel.x = 0;
                             this.fishingHookSprite.vel.y = 0;
                             this.fishingHookState = 0;
+                            //stop the charging sfx
                             chargeSFX.stop();
                         }
                         break;
@@ -203,53 +228,70 @@ class Fisher{
                 }
                 break;
             case 1: //fishing game start
+                //dont move hook
                 this.fishingHookSprite.vel.x = 0;
                 this.fishingHookSprite.vel.y = 0;
                 break;
             case 2: //fishing game
+                //dont move hook
                 this.fishingHookSprite.vel.x = 0;
                 this.fishingHookSprite.vel.y = 0;
                 break;
             case 3: //fishing game end
+                //dont move hook
                 this.fishingHookSprite.vel.x = 0;
                 this.fishingHookSprite.vel.y = 0;
                 break;
             default:
                 break;
         }    
-        
+        //apply rotations
         rotate(this.nextRot);
         //show character in boat
         //show fishing hook, should be a line from fishing pole to hook
         this.fisherSprite.draw();
         this.fisherSprite.update();
-        
+         
+        //show fishing line connecting fishing pole to hook
         fill('#FFFFFF');
         stroke('#FFFFFF');
         line(this.fishingHookSprite.x, this.fishingHookSprite.y, this.hookStartPosX,this.fishingRodY);
         
+        //show fishing hook
         this.fishingHookSprite.draw();
         this.fishingHookSprite.update();
 
         pop();
     }
     launch(){
+        //after finished charging
+        //send the hook forward based on the charge
         this.fishingHookSprite.vel.x = map(this.curCharge, 0, this.maxCharge, 0, -6);
         this.fishingHookSprite.vel.y = map(this.curCharge, 0, this.maxCharge, 0, -5.5);
+        //change states
         this.fishingHookState+=1;
         this.curCharge = 0;
+        //play sfx
         launchSFX.play();
     }
 }
 
+//fish class for the lake, volcano, and clouds as they roam around
 class Fish {
+    //fish sprite
     fishSprite;
+    //original height
     origY;
+    //take a x,y pos, an id to determine the fish, lbound,rbound to determine how much it can roam, and spd value for speed
     constructor(x, y, id, lBound, rBound, spd = 3){
+        //initialize  fishsprites to not have collisions
         this.fishSprite = new Sprite(x,y,90,40);
         this.fishSprite.overlaps(allSprites);
+        //set id
         this.id = id;
+        //set height
         this.origY = y;
+        //if the fish is already captured, show the actual fish, otherwise show a silhouette
         if(fishiesCaptured[id]){
             this.fishSprite.image = actualFishies[id];
         } else {
@@ -257,9 +299,12 @@ class Fish {
         }
         this.lBound = lBound; //to have a left limit
         this.rBound = rBound; //to have a right limit
+        //manually draw the fish
         this.fishSprite.autoDraw = false;
         this.fishSprite.autoUpdate = false;
+        //speed
         this.spd = spd;
+        //determine a random direction to initially move in
         var rand = random(0,1);
         if(rand < .5){
             this.fishSprite.vel.x = spd;
@@ -270,6 +315,7 @@ class Fish {
         }
     }
     display(){
+        //draw and update fish logic
         this.fishSprite.draw();
         this.fishSprite.update();
 
@@ -279,6 +325,9 @@ class Fish {
         && abs(fisher.fishingHookSprite.y+fisher.y - this.fishSprite.y) < 80)){
             this.fishSprite.moveTo(fisher.fishingHookSprite.x+fisher.x,fisher.fishingHookSprite.y+fisher.y,this.spd);
         } else {
+            //otherwise move normally
+            
+            //if the speed is lower than normal, go back to a regular speed
             if(abs(this.fishSprite.vel.x) < abs(this.spd-.5)){
                 var rand = random(0,1);
                 if(rand < .5){
@@ -294,12 +343,13 @@ class Fish {
             if(this.fishSprite.x > this.rBound){
                 this.fishSprite.vel.x = -this.spd;
             }
-            fill("#FFFFFF");
+            //fill("#FFFFFF");
             //text(this.lBound, this.lBound,this.fishSprite.y);
             //text(this.rBound, this.rBound,this.fishSprite.y);
             
             
             //this.fishSprite.y = lerp(this.fishSprite.y,this.origY,.05);
+            //if the fish sprite is not at the original height, return back to the original height
             if(this.fishSprite.y-this.origY>3){
                  this.fishSprite.vel.y = -1;
             } else if (this.fishSprite.y-this.origY<3){
@@ -318,10 +368,12 @@ class Fish {
             current_game_state = 1;
             fisher.isReeling = true;
             allowGameClick = false;
+            //allow a ui click after .5s to make sure no misclick
             setTimeout(function() { allowClick(); },500);
+            //sound effect
             catchSFX.play();
         }
-        
+        //sprite mirroring depending on direction of fish
         if(this.fishSprite.vel.x < 0){
             this.fishSprite.mirror.x=false;
         } else {
@@ -330,55 +382,81 @@ class Fish {
     }
 }
 
+//game fish class for the fishing minigame
 class GameFish {
+    //sprite for fish that moves up and down
     gameFishSprite;
+    //sprite for fish that is displaying on a bigger scale
     fishSprite;
+    //sprite for capturing square
     squareSprite;
+    //id
     id;
+    //current fish object
     obj;
+    //top y value
     top;
+    //bottom y value
     bot;
+    //gravity
     accel = .2;
+    //force to jump up with
     jumpForce = -4;
+    //for fish movement
     randomTimeLeft = 0;
     spd = 1;
     constructor(id){
-        //margin+fishingBoxWidth+gap, margin, width-fishingBoxWidth-gap-margin*2,height-margin*2,
+        
+        //initialize fish sprite
         this.fishSprite = new Sprite((margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2,
         (margin)+(height-margin*2)/2,
         90,40);
+        //shouldnt have physics collisions
         this.fishSprite.overlaps(allSprites);
+        //big sprite
         this.fishSprite.scale = 3;
+        //manually draw
         this.fishSprite.autoDraw = false;
         this.fishSprite.autoUpdate = false;
         
-
+        //square sprite
         this.squareSprite = new Sprite(margin+padding+(fishingBoxWidth-padding*2)/2,
         margin+padding+(height-margin*2-padding*2)/2,
         120,120);
         this.squareSprite.color = '#eb4034';
+        //shouldnt have physics collisions
         this.squareSprite.overlaps(allSprites);
+        //manually draw
         this.squareSprite.autoDraw = false;
         this.squareSprite.autoUpdate = false;
 
+        //initialize game fish sprite
         this.gameFishSprite = new Sprite(margin+padding+(fishingBoxWidth-padding*2)/2,
         margin+padding+(height-margin*2-padding*2)/2,
         90,40);
+        //shouldnt have physics collisions
         this.gameFishSprite.overlaps(allSprites);
+        //manually draw
         this.gameFishSprite.autoDraw = false;
         this.gameFishSprite.autoUpdate = false;
 
+        //call function to set id initially
         this.setID(id);
+        //set the ceiling and floor for the game fish and square
         this.top = margin+padding;
         this.bot = margin+padding+height-margin*2-padding*2;
     }
+    //set id and object value for the fish
     setID(id,obj){
         this.obj = obj;
+        //resets values to be ready for a new game
         this.squareSprite.x = margin+padding+(fishingBoxWidth-padding*2)/2;
         this.squareSprite.y = margin+padding+(height-margin*2-padding*2)/2;
         this.gameFishSprite.x = margin+padding+(fishingBoxWidth-padding*2)/2;
         this.gameFishSprite.y = margin+padding+(height-margin*2-padding*2)/2;
         this.randomTimeLeft=0;
+
+        //based on the fish id, if the fish is already capture it, show what it looks like, otherwise show the silhouette
         this.id = id;
         if(fishiesCaptured[id]){
             this.fishSprite.image = actualFishies[id];
@@ -388,7 +466,9 @@ class GameFish {
             this.gameFishSprite.image = silhouetteFishies[id];
         }
     }
+    //set just the image for the fish based on the id
     setIDImage(id){
+        //based on the fish id, if the fish is already capture it, show what it looks like, otherwise show the silhouette
         this.id = id;
         if(fishiesCaptured[id]){
             this.fishSprite.image = actualFishies[id];
@@ -398,19 +478,25 @@ class GameFish {
             this.gameFishSprite.image = silhouetteFishies[id];
         }
     }
+    //jump function moves the square up using velocity and jumpforce
     jump(){
         this.squareSprite.vel.y = this.jumpForce;
     }
+    //check capture function is run at the end of the minigame to check if the player won or failed
     checkCapture(){
+        //if the gamefish is inside of the square sprite, that counts as a victory
         if(this.gameFishSprite.y < this.squareSprite.y + 60 &&
             this.gameFishSprite.y > this.squareSprite.y - 60){
                 if(fishiesCaptured[this.id]){
+                    //if already captured, set the game_results to that
                     game_results = 1;
                 } else {
+                    //if there is a new capture, set settings to reflect that
                     game_results = 0;
                     fishiesCaptured[this.id] = true;
                     this.setIDImage(this.id);
                 }
+                //if there is a fish associated with the game fish, remove it from the current scene (since you win the minigame)
                 if(this.obj != null){
                     switch (current_scene) {
                         case 2://lake
@@ -435,29 +521,37 @@ class GameFish {
                             break;
                     }
                 }
+                //victory sound effect
                 victorySFX.play();
             } else {
+                //otherwise, loss
                 game_results = 2;
+                //lose sound effect
                 lossSFX.play();
             }
     }
     display(){
+        //fade in and out based on overall minigame alpha
         tint(255,overallAlpha);
         var col = color('#eb4034');
         col.setAlpha(overallAlpha);
         this.squareSprite.color = col;
+        //draw and update all sprites
         this.squareSprite.draw();
         this.squareSprite.update();
         this.fishSprite.draw();
         this.fishSprite.update();
         this.gameFishSprite.draw();
         this.gameFishSprite.update();
-
+        
         if(current_game_state == 2){ //in game
             if(this.randomTimeLeft > 0){
-                this.randomTimeLeft--;
+                //decrement random time
+                this.randomTimeLeft--; 
             } else {
+                //if randomtime <= 0, choose a different randomtime which will determine how long the fish moves in a certain direction
                 this.randomTimeLeft = random(1,5)*60;
+                //move in a random direction
                 var rand = random(0,1);
                 if(rand < .5){
                     this.gameFishSprite.vel.y = this.spd;
@@ -466,47 +560,58 @@ class GameFish {
                 }
             }
 
-
+            //accelerate downwards with gravity
             this.squareSprite.vel.y += this.accel;
+            //stop at floor
             if(this.squareSprite.y > this.bot-60){
                 this.squareSprite.y = this.bot-61;
                 this.squareSprite.vel.y = 0;
             }
+            //stop at ceiling
             if(this.squareSprite.y < this.top+60){
                 this.squareSprite.y = this.top+61;
             }
-
+            //stop fish at floor
             if(this.gameFishSprite.y > this.bot-20){
                 this.gameFishSprite.y = this.bot-20;
                 this.gameFishSprite.vel.y = 0;
             }
+            //stop fish at ceiling
             if(this.gameFishSprite.y < this.top+20){
                 this.gameFishSprite.y = this.top+20;
                 this.gameFishSprite.vel.y = 0;
             }
-        } else {
+        } else { //not in game
+            //set velocities to 0
             this.squareSprite.vel.y = 0;
             this.gameFishSprite.vel.y = 0;
         }
+        //restore the tint
         tint(255,255);
     }
 }
 
+//for UI buttons at the top
 class Button {
+    //hovering state
     isHovering=false;
+    //active state
     isActive=false;
+    //constructor to set looks and text of the button
     constructor(x, y, w, h, func, text = "hi"){
         this.x = x;
         this.y = y;
         this.w = w;
         this.h = h;
+        //set a function to the onclick event
         this.func = func;
         this.text = text;
         this.borderSize = 4;
     }
     display(){
         push();
-        if(this.isActive){
+        if(this.isActive){ //when already on the respective scene, it is active
+            //draw active state
             fill("#FF9800");
             rect(this.x-this.borderSize,
                 this.y-this.borderSize,
@@ -519,7 +624,8 @@ class Button {
                     this.h, 20);
         } else if(mouseX > this.x && mouseX < this.x + this.w
             && mouseY > this.y && mouseY < this.y + this.h
-            && current_game_state == 0){
+            && current_game_state == 0){ //when mouse hovering over inactive object
+                //set hovering values and draw state
             this.isHovering = true;
             fill("#FF2667");
             rect(this.x-this.borderSize,
@@ -532,7 +638,8 @@ class Button {
                 this.w,
                 this.h, 20);
             
-        } else {
+        } else { // when mouse not hovering over inactive object
+            //set hovering values and draw state
             this.isHovering = false;
             fill("#00133960");
             rect(this.x-this.borderSize,
@@ -546,13 +653,15 @@ class Button {
                 this.h, 20);
                 
         }
+        //draw text for button
         fill("#FFFFFF");
         textSize(15);
         textAlign(CENTER, CENTER);
         text(this.text, this.x+this.w/2, this.y+this.h/2-2);
         if(this.isHovering && mouseIsPressed 
             && current_game_state == 0){
-                uiClickSFX.play();
+            //if clicking on object, play sfx and call the function
+            uiClickSFX.play();
             this.func();
         }
         pop();
@@ -583,7 +692,7 @@ var actualFishies = [
     "assets/FISH/Fish2Sky.png",
     "assets/FISH/Fish3Sky.png"
 ]
-//id based
+//id based to track which fishes have been captured
 var fishiesCaptured = [
     false,
     false,
@@ -604,10 +713,10 @@ var current_scene = 1; //StartScene, Aquarium, Lake, Volcano, Sky
 //minigame
 var current_game_state = 0; //no fishing game, fishing game start, fishing game, fishing game end
 var game_results = 2; //new fish, old fish, loss
-var game_time = 10;
-var game_time_left = 0;
-var timerID;
-var allowGameClick = true;
+var game_time = 10; // how long the game should last
+var game_time_left = 0; // how long is left
+var timerID; // the id for the timer callback to end the timer decrement function
+var allowGameClick = true; //variable to allow the user to click on the game
 
 //SCREEN UI alpha values to smoothly fade between game states
 var overallAlpha = 0;
@@ -704,6 +813,8 @@ var lossSFX = new Howl({
 //water height
 var waterHeight= 230;
 
+
+//preload function for fonts and images
 function preload(){
     fnt = loadFont("assets/Raleway-SemiBold.ttf");
     aquariumBG = loadImage("assets/aquariumbg.png");
@@ -713,10 +824,13 @@ function preload(){
     skyBG = loadImage("assets/skybg.png");
 }
 
+
+//setup function
 function setup() {
     createCanvas(800, 600);
     noStroke();
     textFont(fnt);
+    //initialize the buttons with respective functions
     AquariumButton = new Button(startingX + buttonWidth*0 + buttonSpacing*0,startingY,buttonWidth,30,GoToAquarium, "aquarium");
     LakeButton = new Button(startingX + buttonWidth*1 + buttonSpacing*1,startingY,buttonWidth,30,GoToLake, "lake");
     VolcanoButton = new Button(startingX + buttonWidth*2 + buttonSpacing*2,startingY,buttonWidth,30,GoToVolcano, "volcano");
@@ -724,40 +838,45 @@ function setup() {
 
     AquariumButton.isActive = true;
 
+    //create new fisher object
     fisher = new Fisher();
+    //set minigame alpha to 0
     overallAlpha = 0;
-
+    //create new gamefish object
     gameFish = new GameFish(0);
-
+    //play background music
     song.play();
 }
-  
+
+//draw function
 function draw() {
+
+    //initial background color
     background(col);
 
+    //check if the button is hovered
     hoveringButton = checkIfButtonIsHovered();
     if(hoveringButton){
+        //if hovered, change cursor type
         cursor('pointer');
     } else {
+        //return to regular cursor type
         cursor(ARROW);
     }
 
+    //switch for scene to display
     switch (current_scene) {
         case 0: // START SCENE
-            scale(nextScale);
-            translate(nextX, nextY);
-
-            //say something like click anywhere to start then smooth transition to aquarium
-            if (mouseIsPressed === true) {
-                current_scene = 1;
-            }
-
+            //decided to not have a start scene as it would be redundant with the aquarium scene
             break;
         case 1: // AQUARIUM
+            //draw aquarium background
             drawAquariumBG();
+            //draw fishies in the aquarium
             for(i = 0; i < aquariumFishies.length; i++){
                 aquariumFishies[i].display();
             }
+            //draw the foreground for the aquarium
             drawAquariumFG();
             //UI
             fill('#ffffff6c')
@@ -775,31 +894,37 @@ function draw() {
             text("a game by taneim miah",width-19,height-14);
             fill("#348ceb");
             text("a game by taneim miah",width-20,height-15);
+
+            //draw buttons
             drawUIButtons();
             break;
         case 2: // LAKE
             
-            
+            //draw lake background
             drawLakeBG();
+            //draw fisher cat object
             drawFisher();
+            //draw all lake fishies
             for(i = 0; i < lakeFishies.length; i++){
                 lakeFishies[i].display();
             }
 
             //UI
-            
             drawUIButtons();
             break;
         case 3: // VOLCANO
+
+            //draw volcano background
             drawVolcanoBG();
+            //draw fisher cat object
             drawFisher();
+            //draw all the volcano fishies
             for(i = 0; i < volcanoFishies.length; i++){
                 volcanoFishies[i].display();
             }
 
 
             //UI
-            
             drawUIButtons();
             break;
         case 4: // SKY
@@ -809,56 +934,63 @@ function draw() {
                 skyFishies[i].display();
             }
             //UI
-            
             drawUIButtons();
             break;
         default:
             break;
     }
 
+    //display all the fishing minigame functions
     DisplayFishingGameUIBox();
     DisplayFishingGameStart();
     DisplayFishingGameGame();
     DisplayFishingGameEnd();
     gameFish.display();
 
+    //based on the current minigame state, change alphas
     switch (current_game_state) {
         case 0: //no fishing game
+            //set all alphas to 0
             overallAlpha = lerp(overallAlpha, 0, .05);
             startAlpha = lerp(startAlpha, 0, .05);
             gameAlpha = lerp(gameAlpha, 0, .05);
             endAlpha = lerp(endAlpha, 0, .05);
             break;
         case 1: //fishing game start
-            
+            //set alphas
             
             overallAlpha = lerp(overallAlpha, 255, .05);
             if(allowGameClick){
+                //show the start text when allowing game click
                 startAlpha = lerp(startAlpha, 255, .05);
             }
             gameAlpha = lerp(gameAlpha, 0, .05);
             endAlpha = lerp(endAlpha, 0, .05);
             break;
         case 2: //fishing game
+            //while in fishing game, if the game time left is finished, switch to the next game state
             if(game_time_left <= 0){
                 current_game_state = 3;
-                
+                //check if the game fish was captured
                 gameFish.checkCapture();
+                //delay allow game click to prevent accidents
                 allowGameClick = false;
                 setTimeout(allowClick,500);
             }
+            //set alphas
             overallAlpha = lerp(overallAlpha, 255, .05);
             startAlpha = lerp(startAlpha, 0, .05);
             gameAlpha = lerp(gameAlpha, 255, .05);
             endAlpha = lerp(endAlpha, 0, .05);
             break;
         case 3: //fishing game end
-            
+            //set alphas
                 overallAlpha = lerp(overallAlpha, 255, .05);
 
                 startAlpha = lerp(startAlpha, 0, .05);
                 gameAlpha = lerp(gameAlpha, 0, .05);
             if(allowGameClick){
+                //if allow game click, show end text
                 endAlpha = lerp(endAlpha, 255, .05);
             }
             break;
@@ -868,6 +1000,7 @@ function draw() {
 
 }
 
+//function to display all of the UI buttons at the top
 function drawUIButtons(){
     push();
     fill("#181e36");
@@ -880,6 +1013,7 @@ function drawUIButtons(){
     SkyButton.display();
 
     
+    //instructional text
     textAlign(LEFT,BOTTOM);
     textSize(34);
     fill("#31485a");
@@ -893,7 +1027,7 @@ function drawUIButtons(){
 
     
     
-
+    //subtle text to teach the player what the game is about
     if(AquariumButton.isActive){
         fill("#ffffff41");
         textAlign(RIGHT,TOP);
@@ -903,13 +1037,14 @@ function drawUIButtons(){
     pop();
 }
 
-
 function checkIfButtonIsHovered(){ //checks if any button is hovered
     return AquariumButton.isHovering 
         || LakeButton.isHovering 
         || VolcanoButton.isHovering 
         || SkyButton.isHovering;
 }
+
+//reset all of the active button states
 function disableAllButtonActive(){
     AquariumButton.isActive=false;
     LakeButton.isActive=false;
@@ -922,6 +1057,7 @@ function disableAllButtonActive(){
     cursor(ARROW);
 }
 
+//display the fishing game ui box that is present in all fishing game states (other than 0)
 function DisplayFishingGameUIBox(){
     push();
     //background tint
@@ -960,11 +1096,12 @@ function DisplayFishingGameUIBox(){
     col.setAlpha(overallAlpha*.7);
     fill(col);
     textSize(20);
+    //instruction
     text("left click makes the red square jump up\nmake the fish stay in the red square\nby the end of the time limit", (margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2, top+60);
 
     pop();
 }
-
+//ui that appears when ready to start
 function DisplayFishingGameStart(){
     push();
     var bot = margin+padding+height-margin*2-padding*2;
@@ -977,6 +1114,7 @@ function DisplayFishingGameStart(){
     text("CLICK TO START", (margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2, bot);
     pop();
 }
+//game ui during the actual minigame
 function DisplayFishingGameGame(){
     push();
     var bot = margin+padding+height-margin*2-padding*2;
@@ -989,6 +1127,7 @@ function DisplayFishingGameGame(){
     text("TIME LEFT: "+game_time_left, (margin+fishingBoxWidth+gap)+(width-fishingBoxWidth-gap-margin*2)/2, bot-50);
     pop();
 }
+//ui that appears when game is over
 function DisplayFishingGameEnd(){
     push();
     var bot = margin+padding+height-margin*2-padding*2;
@@ -999,6 +1138,7 @@ function DisplayFishingGameEnd(){
     textAlign(CENTER, BOTTOM);
     textSize(20);
     var s = "";
+    //based on the game results, display a different text
     switch (game_results) {
         case 0: //new
             s = "CONGRATS! YOU CAUGHT A NEW FISH\n FOR YOUR AQUARIUM";
@@ -1018,19 +1158,27 @@ function DisplayFishingGameEnd(){
     pop();
 }
 
-
+//function when you click aquarium button
 function GoToAquarium(){
+    //reset all values
     disableAllButtonActive()
+    //set the scene and active button to aquarium
     AquariumButton.isActive = true;
     current_scene = 1;
     fisher.reset();
+    //spawn all of the fishies in the aquarium
     spawnAquariumFishies();
 }
+//function to spawn the aquarium fishies
 function spawnAquariumFishies(){
+    //remove already existing fishies
     aquariumFishies.forEach(element => {
         element.fishSprite.remove();
     });
+    //set empty array
     aquariumFishies = [];
+
+    //create the lake fishies
     var startIndex = 0;
     for(i = startIndex; i < startIndex+3; i++){
         if(fishiesCaptured[i]){
@@ -1041,6 +1189,7 @@ function spawnAquariumFishies(){
             aquariumFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,floor(random(1,2))/2));
         }
     }
+    //create the volcano fishies
     var startIndex = 3;
     for(i = startIndex; i < startIndex+3; i++){
         if(fishiesCaptured[i]){
@@ -1051,6 +1200,7 @@ function spawnAquariumFishies(){
             aquariumFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,floor(random(3,5))/2));
         }
     }
+    //create the sky fishies
     var startIndex = 6;
     for(i = startIndex; i < startIndex+3; i++){
         if(fishiesCaptured[i]){
@@ -1063,20 +1213,30 @@ function spawnAquariumFishies(){
     }
 }
 
+//function when you click the lake button
 function GoToLake(){
+    //reset values
     disableAllButtonActive()
+    //set scene and button to lake and active
     LakeButton.isActive = true;
     current_scene = 2;
+    //reset fisher
     fisher.reset();
+    //spawn the lake fishies
     spawnLakeFishies();
 }
+//function that handles spawning of lake fishies
 function spawnLakeFishies(){//IDS 0-2
+    //remove already existing fish
     lakeFishies.forEach(element => {
         element.fishSprite.remove();
     });
+    //set empty array
     lakeFishies = [];
+    //spawn all of the lake fish based on the ids
     var startIndex = 0;
     for(i = startIndex; i < startIndex+3; i++){
+        //each fish should be randomly spawned with some variation
         var variation = random(240,600);
         var randLBound = random(0,width-120-variation);
         var randX = random(randLBound,randLBound+variation);
@@ -1084,21 +1244,30 @@ function spawnLakeFishies(){//IDS 0-2
         lakeFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,floor(random(1,2))/2));
     }
 }
-
+//function when you click the volcano button
 function GoToVolcano(){
+    //reset values
     disableAllButtonActive()
+    //set scene and button to volcano and active
     VolcanoButton.isActive = true;
     current_scene = 3;
+    //reset fisher
     fisher.reset();
+    //spawn the volcano fishies
     spawnVolcanoFishies();
 }
+//function that handles the spawning of the volcano fishies
 function spawnVolcanoFishies(){//IDS 3-5
+    //remove already existing fish
     volcanoFishies.forEach(element => {
         element.fishSprite.remove();
     });
+    //set empty array
     volcanoFishies = [];
+    //spawn all of the fish based on the ids
     var startIndex = 3;
     for(i = startIndex; i < startIndex+3; i++){
+        //each fish should be randomly spawned with some variation
         var variation = random(240,600);
         var randLBound = random(0,width-120-variation);
         var randX = random(randLBound,randLBound+variation);
@@ -1106,21 +1275,30 @@ function spawnVolcanoFishies(){//IDS 3-5
         volcanoFishies.push(new Fish(randX,randY,i,randLBound,randLBound+variation,floor(random(3,5))/2));
     }
 }
-
+//function when you click the sky button
 function GoToSky(){
+    //reset values
     disableAllButtonActive()
+    //set scene and button to sky and active
     SkyButton.isActive = true;
     current_scene = 4;
+    //reset fisher
     fisher.reset();
+    //spawn the sky fishies
     spawnSkyFishies();
 }
+//function that handles the spawning of the sky fish
 function spawnSkyFishies(){//IDS 6-8
+    //remove already existing fish
     skyFishies.forEach(element => {
         element.fishSprite.remove();
     });
+    //set empty array
     skyFishies = [];
+    //spawn all of the fish based on the ids
     var startIndex = 6;
     for(i = startIndex; i < startIndex+3; i++){
+        //each fish should be randomly spawned with some variation
         var variation = random(240,600);
         var randLBound = random(0,width-120-variation);
         var randX = random(randLBound,randLBound+variation);
@@ -1148,6 +1326,7 @@ function drawFisher(){
 }
 
 function drawLakeBG(){
+    //function to draw lake background
     background("#87CEEB");
     fill("#175982");
     rect(0,waterHeight,width,height-waterHeight);
@@ -1155,12 +1334,14 @@ function drawLakeBG(){
 }
 
 function drawVolcanoBG(){
+    //function to draw volcano background
     background("#793d33");
     fill("#ff441f");
     rect(0,waterHeight,width,height-waterHeight);
     image(volcanoBG, 0,230);
 }
 function drawSkyBG(){
+    //function to draw sky background
     background("#9bb5c4");
     //fill("#9bb5c4");
     //rect(0,waterHeight,width,height-waterHeight);
@@ -1168,16 +1349,20 @@ function drawSkyBG(){
 }
 //idea from this https://editor.p5js.org/denaplesk2/sketches/ryIBFP_lG
 function timer(){
+    //game timer decrements while game time left is above 0
     if(game_time_left > 0){
         game_time_left--;
     } else {
+        //otherwise stop calling this function
         clearInterval(timerID);
     }
 }
+//function that allows the game click
 function allowClick(){
     allowGameClick = true;
 }
 
+//handles mouse pressed events
 function mousePressed(){
     if((current_scene!=0 && current_scene!=1) && !hoveringButton){
         switch (current_game_state) {//no fishing game, fishing game start, fishing game, fishing game end
@@ -1185,6 +1370,7 @@ function mousePressed(){
                 switch (fisher.fishingHookState) {//0 -> start pos, 1 -> charging, 2 -> launched, 3 -> in water (should be reeled in)
                     case 0: // start pos (ready to charge)
                         fisher.fishingHookState+=1;
+                        //set initial charge sound effect values
                         chargeSFX.play();
                         chargeSFX.rate(.8);
                         chargeSFX.volume(0.1);
@@ -1196,6 +1382,7 @@ function mousePressed(){
                         
                         break;
                     case 3: //in the water (mouse click should bring the reel closer to the start position)
+                        //reel sound effect
                         chargeSFX.play();
                         chargeSFX.volume(0.06);
                         chargeSFX.rate(1.5);
@@ -1206,24 +1393,32 @@ function mousePressed(){
                 break;
             case 1: //fishing game start
                 if(allowGameClick){
+                    //when the fishing game is actually started
                     current_game_state=2;
                     game_time_left = game_time;
+                    //start timer interval to go down every second
                     timerID = setInterval(timer,1000);
+
+                    //play sound effect
                     clickSFX.play();
-                    clickSFX.rate(random(0.8,1.2));
+                    clickSFX.rate(random(0.8,1.2)); //add variety
                 }
                 break;
             case 2: //fishing game
+                //make the fish jump on click
                 gameFish.jump();
+                //play sound effect
                 clickSFX.play();
-                clickSFX.rate(random(0.8,1.2));
+                clickSFX.rate(random(0.8,1.2)); //add variety
                 break;
             case 3: //fishing game end
                 if(allowGameClick){
+                    //when the fishing game is closed
                     fisher.reset();
                     current_game_state=0;
+                    //play sound effect
                     clickSFX.play();
-                    clickSFX.rate(random(0.8,1.2));
+                    clickSFX.rate(random(0.8,1.2)); //add variety
                 }
                 break;
             default:
@@ -1233,6 +1428,7 @@ function mousePressed(){
     }
 }
 
+//when the player lets go of the mouse
 function mouseReleased(){
     if(current_scene!=0 || current_scene!=1){
         switch (current_game_state) {//no fishing game, fishing game start, fishing game, fishing game end
@@ -1242,13 +1438,16 @@ function mouseReleased(){
 
                         break;
                     case 1: //charging (when release, launch)
+                        //stop the charging sound effect
                         chargeSFX.stop();
+                        //launch the fishing hook
                         fisher.launch();
                         break;
                     case 2: //launched (the mouse click shouldn't do anything while it is traveling in the air)
                         
                         break;
                     case 3: //mouse release while reeling in the hook
+                        //stop the reeling sfx
                         chargeSFX.stop();
                         break;
                     default:
